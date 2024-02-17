@@ -1,8 +1,8 @@
-use nix::ioctl_readwrite;
-use std::os::unix::io::AsRawFd;
-use num_traits::FromPrimitive;
 use crate::crosec::EcCmdResult;
 use crate::crosec::EcError;
+use nix::ioctl_readwrite;
+use num_traits::FromPrimitive;
+use std::os::unix::io::AsRawFd;
 
 use super::EcResponseStatus;
 
@@ -40,7 +40,7 @@ fn get_fildes() -> i32 {
 
 fn init() {
     match std::fs::File::open(DEV_PATH) {
-        Err(why) => println!("Failed to open {}. Because: {:?}", DEV_PATH, why),
+        Err(why) => println!("Failed to open {DEV_PATH}. Because: {why:?}"),
         Ok(file) => unsafe { CROS_EC_FD = Some(file) },
     };
 }
@@ -52,7 +52,7 @@ pub fn ec_command(command: u32, command_version: u8, data: &[u8]) -> EcCmdResult
 
     let mut cmd = CrosEcCommandV2 {
         version: command_version as u32,
-        command: command,
+        command,
         outsize: size as u32,
         insize: IN_SIZE as u32,
         result: 0xFF,
@@ -62,28 +62,17 @@ pub fn ec_command(command: u32, command_version: u8, data: &[u8]) -> EcCmdResult
     cmd.data[0..size].copy_from_slice(data);
     let cmd_ptr = &mut cmd as *mut _ as *mut _CrosEcCommandV2;
 
-
     unsafe {
         let result = cros_ec_cmd(get_fildes(), cmd_ptr);
-        let status: Option<EcResponseStatus> = FromPrimitive::from_u32(cmd.result);
-
-        match &status {
-            None => return Err(EcError::UnknownResponseCode(cmd.result)),
-            Some(EcResponseStatus::Success) => {},
-            Some(status) => return Err(EcError::Response(*status)),
-        }
-
-        match result {
-            Ok(result) => {
-                let result_size = result as usize;
-                let result_data = &cmd.data[0..result_size];
-                Ok(result_data.to_vec())
-            }
-            Err(err) => Err(EcError::DeviceError(format!(
-                "ioctl to send command to EC failed with {:?}", err
-            )))
-        }
-
-
+        let status =
+            FromPrimitive::from_u32(cmd.result).ok_or(EcError::UnknownResponseCode(cmd.result))?;
+        let EcResponseStatus::Success = status else {
+            return Err(EcError::Response(status));
+        };
+        result
+            .map(|result| cmd.data[0..result as usize].to_vec())
+            .map_err(|err| {
+                EcError::DeviceError(format!("ioctl to send command to EC failed with {err:?}"))
+            })
     }
 }
