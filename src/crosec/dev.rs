@@ -6,7 +6,7 @@ use std::os::unix::io::AsRawFd;
 
 use super::EcResponseStatus;
 
-const IN_SIZE: usize = 256;
+pub const IN_SIZE: usize = 256;
 
 #[repr(C)]
 pub struct _CrosEcCommandV2 {
