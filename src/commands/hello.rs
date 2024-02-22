@@ -16,7 +16,7 @@ struct EcResponseHello {
     out_data: u32,
 }
 
-pub fn ec_cmd_hello() {
+pub fn ec_cmd_hello() -> bool {
     let params = EcParamsHello {
         in_data: INPUT_DATA,
     };
@@ -27,6 +27,8 @@ pub fn ec_cmd_hello() {
         .unwrap_or_else(|error| panic!("EC error: {error:?}"));
     let response: EcResponseHello = unsafe { std::ptr::read(result.as_ptr() as *const _) };
     if response.out_data == EXPECTED_OUTPUT {
-        println!("Ec says hello!");
+        true
+    } else {
+        false
     }
 }
