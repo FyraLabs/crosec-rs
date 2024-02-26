@@ -1,12 +1,12 @@
 use crate::commands::CrosEcCmds;
 use crate::crosec::dev::ec_command;
+use crate::crosec::dev::BUF_SIZE;
 use num_traits::FromPrimitive;
 use num_derive::FromPrimitive;
 use std::mem::size_of;
 use std::slice;
 
-const BUILDMAX: usize = 248;
-const TOOLVERSION: &str = "0.1.0";
+const TOOLVERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[repr(C, align(4))]
 struct EcResponseVersionV1 {
@@ -35,7 +35,7 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
         cros_fwid_rw: [0; 32],
     };
 
-    let build_string: [u8; BUILDMAX] = [0; BUILDMAX];
+    let build_string: [u8; BUF_SIZE] = [0; BUF_SIZE];
     let params_ptr = &params as *const _ as *const u8;
     let params_slice = unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseVersionV1>()) };
 
@@ -57,11 +57,11 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
     };
     
     let build_string_ptr = &build_string as *const _ as *const u8;
-    let build_string_slice = unsafe { slice::from_raw_parts(build_string_ptr, BUILDMAX) };
+    let build_string_slice = unsafe { slice::from_raw_parts(build_string_ptr, BUF_SIZE) };
 
     let result = ec_command(CrosEcCmds::GetBuildInfo as u32, 0, build_string_slice)
     .unwrap_or_else(|error| panic!("EC error: {error:?}"));
-    let response: [u8; BUILDMAX] = unsafe { std::ptr::read(result.as_ptr() as *const _) };
+    let response: [u8; BUF_SIZE] = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     let build_info = String::from_utf8(response.to_vec()).unwrap_or(String::from(""));
     (ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION))

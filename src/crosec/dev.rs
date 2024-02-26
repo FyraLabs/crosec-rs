@@ -7,9 +7,10 @@ use std::os::unix::io::AsRawFd;
 use super::EcResponseStatus;
 
 pub const IN_SIZE: usize = 256;
+pub const BUF_SIZE: usize = IN_SIZE - 8;
 
 #[repr(C)]
-pub struct _CrosEcCommandV2 {
+struct _CrosEcCommandV2 {
     version: u32,
     command: u32,
     outsize: u32,
