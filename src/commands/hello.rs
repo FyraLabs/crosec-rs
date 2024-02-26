@@ -26,9 +26,5 @@ pub fn ec_cmd_hello() -> bool {
     let result = ec_command(CrosEcCmds::Hello as u32, 0, params_slice)
         .unwrap_or_else(|error| panic!("EC error: {error:?}"));
     let response: EcResponseHello = unsafe { std::ptr::read(result.as_ptr() as *const _) };
-    if response.out_data == EXPECTED_OUTPUT {
-        true
-    } else {
-        false
-    }
+    response.out_data == EXPECTED_OUTPUT
 }
