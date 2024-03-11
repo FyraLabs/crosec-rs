@@ -1,7 +1,7 @@
 use color_eyre::eyre::Result;
-use crosec_rs::commands::get_chip_info::ec_cmd_get_chip_info;
-use crosec_rs::commands::hello::ec_cmd_hello;
-use crosec_rs::commands::version::ec_cmd_version;
+use crosec_rs::commands::{
+    get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version,
+};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
