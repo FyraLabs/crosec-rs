@@ -19,11 +19,11 @@ struct EcResponseVersionV1 {
 
 #[derive(FromPrimitive)]
 enum EcImage {
-    EcImageUnknown = 0,
-    EcImageRo = 1,
-    EcImageRw = 2,
-    EcImageRoB = 3,
-    EcImageRwB = 4,
+    Unknown = 0,
+    Ro = 1,
+    Rw = 2,
+    RoB = 3,
+    RwB = 4,
 }
 
 pub fn ec_cmd_version() -> (String, String, String, String, String) {
@@ -48,11 +48,11 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
     let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or(String::from(""));
 
     let image = match FromPrimitive::from_u32(response.current_image) {
-        Some(EcImage::EcImageUnknown) => String::from("Unknown"),
-        Some(EcImage::EcImageRo) => String::from("RO"),
-        Some(EcImage::EcImageRw) => String::from("RW"),
-        Some(EcImage::EcImageRoB) => String::from("RO B"),
-        Some(EcImage::EcImageRwB) => String::from("RW B"),
+        Some(EcImage::Unknown) => String::from("Unknown"),
+        Some(EcImage::Ro) => String::from("RO"),
+        Some(EcImage::Rw) => String::from("RW"),
+        Some(EcImage::RoB) => String::from("RO B"),
+        Some(EcImage::RwB) => String::from("RW B"),
         None => String::from("Unknown"),
     };
 

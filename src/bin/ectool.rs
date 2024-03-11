@@ -5,7 +5,7 @@ use crosec_rs::commands::version::ec_cmd_version;
 fn main() {
     println!("Hello command");
     let status = ec_cmd_hello();
-    if status == true {
+    if status {
         println!("EC says hello!");
     } else {
         println!("EC did not say hello :(");
