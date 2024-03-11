@@ -1,4 +1,5 @@
-pub enum CrosEcCmds {
+#[repr(u32)]
+pub enum CrosEcCmd {
     Hello = 0x0001,
     Version = 0x0002,
     GetBuildInfo = 0x0004,

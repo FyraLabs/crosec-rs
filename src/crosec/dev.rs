@@ -1,3 +1,4 @@
+use crate::commands::CrosEcCmd;
 use crate::crosec::EcCmdResult;
 use crate::crosec::EcError;
 use nix::ioctl_readwrite;
@@ -21,7 +22,7 @@ struct _CrosEcCommandV2 {
 #[repr(C)]
 struct CrosEcCommandV2 {
     version: u32,
-    command: u32,
+    command: CrosEcCmd,
     outsize: u32,
     insize: u32,
     result: u32,
@@ -46,7 +47,7 @@ fn init() {
     };
 }
 
-pub fn ec_command(command: u32, command_version: u8, data: &[u8]) -> EcCmdResult<Vec<u8>> {
+pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8]) -> EcCmdResult<Vec<u8>> {
     init();
 
     let size = std::cmp::min(IN_SIZE, data.len());

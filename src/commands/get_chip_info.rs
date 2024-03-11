@@ -1,4 +1,4 @@
-use crate::commands::CrosEcCmds;
+use crate::commands::CrosEcCmd;
 use crate::crosec::dev::ec_command;
 use crate::crosec::EcCmdResult;
 use std::mem::size_of;
@@ -22,7 +22,7 @@ pub fn ec_cmd_get_chip_info() -> EcCmdResult<(String, String, String)> {
     let params_slice =
         unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseGetChipInfo>()) };
 
-    let result = ec_command(CrosEcCmds::GetChipInfo as u32, 0, params_slice)?;
+    let result = ec_command(CrosEcCmd::GetChipInfo, 0, params_slice)?;
     let response: EcResponseGetChipInfo = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     let vendor = String::from_utf8(response.vendor.to_vec()).unwrap_or(String::from(""));
