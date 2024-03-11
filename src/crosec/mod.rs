@@ -1,4 +1,6 @@
+use nix::errno::Errno;
 use num_derive::FromPrimitive;
+use thiserror::Error;
 pub mod dev;
 
 #[derive(FromPrimitive, Debug, Copy, Clone)]
@@ -26,11 +28,14 @@ pub enum EcResponseStatus {
     DUPUnavailable = 20,
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum EcError {
+    #[error("command failed with status {0:?}")]
     Response(EcResponseStatus),
+    #[error("received unknown response code {0}")]
     UnknownResponseCode(u32),
-    DeviceError(String),
+    #[error("device error with errno {0:?}")]
+    DeviceError(Errno),
 }
 
 pub type EcCmdResult<T> = Result<T, EcError>;

@@ -1,6 +1,7 @@
 use crate::commands::CrosEcCmds;
 use crate::crosec::dev::ec_command;
 use crate::crosec::dev::BUF_SIZE;
+use crate::crosec::EcCmdResult;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::mem::size_of;
@@ -26,7 +27,7 @@ enum EcImage {
     RwB = 4,
 }
 
-pub fn ec_cmd_version() -> (String, String, String, String, String) {
+pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)> {
     let params = EcResponseVersionV1 {
         version_string_ro: [0; 32],
         version_string_rw: [0; 32],
@@ -40,8 +41,7 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
     let params_slice =
         unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseVersionV1>()) };
 
-    let result = ec_command(CrosEcCmds::Version as u32, 0, params_slice)
-        .unwrap_or_else(|error| panic!("EC error: {error:?}"));
+    let result = ec_command(CrosEcCmds::Version as u32, 0, params_slice)?;
     let response: EcResponseVersionV1 = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or(String::from(""));
@@ -59,10 +59,9 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
     let build_string_ptr = &build_string as *const _ as *const u8;
     let build_string_slice = unsafe { slice::from_raw_parts(build_string_ptr, BUF_SIZE) };
 
-    let result = ec_command(CrosEcCmds::GetBuildInfo as u32, 0, build_string_slice)
-        .unwrap_or_else(|error| panic!("EC error: {error:?}"));
+    let result = ec_command(CrosEcCmds::GetBuildInfo as u32, 0, build_string_slice)?;
     let response: [u8; BUF_SIZE] = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     let build_info = String::from_utf8(response.to_vec()).unwrap_or(String::from(""));
-    (ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION))
+    Ok((ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION)))
 }

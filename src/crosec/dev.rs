@@ -72,8 +72,6 @@ pub fn ec_command(command: u32, command_version: u8, data: &[u8]) -> EcCmdResult
         };
         result
             .map(|result| cmd.data[0..result as usize].to_vec())
-            .map_err(|err| {
-                EcError::DeviceError(format!("ioctl to send command to EC failed with {err:?}"))
-            })
+            .map_err(|err| EcError::DeviceError(err))
     }
 }
