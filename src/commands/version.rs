@@ -1,8 +1,8 @@
 use crate::commands::CrosEcCmds;
 use crate::crosec::dev::ec_command;
 use crate::crosec::dev::BUF_SIZE;
-use num_traits::FromPrimitive;
 use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::mem::size_of;
 use std::slice;
 
@@ -19,11 +19,11 @@ struct EcResponseVersionV1 {
 
 #[derive(FromPrimitive)]
 enum EcImage {
-	EcImageUnknown = 0,
-	EcImageRo = 1,
-	EcImageRw = 2,
-	EcImageRoB = 3,
-	EcImageRwB = 4,
+    EcImageUnknown = 0,
+    EcImageRo = 1,
+    EcImageRw = 2,
+    EcImageRoB = 3,
+    EcImageRwB = 4,
 }
 
 pub fn ec_cmd_version() -> (String, String, String, String, String) {
@@ -37,7 +37,8 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
 
     let build_string: [u8; BUF_SIZE] = [0; BUF_SIZE];
     let params_ptr = &params as *const _ as *const u8;
-    let params_slice = unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseVersionV1>()) };
+    let params_slice =
+        unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseVersionV1>()) };
 
     let result = ec_command(CrosEcCmds::Version as u32, 0, params_slice)
         .unwrap_or_else(|error| panic!("EC error: {error:?}"));
@@ -46,8 +47,7 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
     let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or(String::from(""));
     let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or(String::from(""));
 
-    let image =
-    match FromPrimitive::from_u32(response.current_image) {
+    let image = match FromPrimitive::from_u32(response.current_image) {
         Some(EcImage::EcImageUnknown) => String::from("Unknown"),
         Some(EcImage::EcImageRo) => String::from("RO"),
         Some(EcImage::EcImageRw) => String::from("RW"),
@@ -55,12 +55,12 @@ pub fn ec_cmd_version() -> (String, String, String, String, String) {
         Some(EcImage::EcImageRwB) => String::from("RW B"),
         None => String::from("Unknown"),
     };
-    
+
     let build_string_ptr = &build_string as *const _ as *const u8;
     let build_string_slice = unsafe { slice::from_raw_parts(build_string_ptr, BUF_SIZE) };
 
     let result = ec_command(CrosEcCmds::GetBuildInfo as u32, 0, build_string_slice)
-    .unwrap_or_else(|error| panic!("EC error: {error:?}"));
+        .unwrap_or_else(|error| panic!("EC error: {error:?}"));
     let response: [u8; BUF_SIZE] = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     let build_info = String::from_utf8(response.to_vec()).unwrap_or(String::from(""));

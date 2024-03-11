@@ -5,6 +5,6 @@ pub enum CrosEcCmds {
     GetChipInfo = 0x0005,
 }
 
+pub mod get_chip_info;
 pub mod hello;
 pub mod version;
-pub mod get_chip_info;

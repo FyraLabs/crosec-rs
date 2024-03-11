@@ -18,7 +18,8 @@ pub fn ec_cmd_get_chip_info() -> (String, String, String) {
     };
 
     let params_ptr = &params as *const _ as *const u8;
-    let params_slice = unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseGetChipInfo>()) };
+    let params_slice =
+        unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseGetChipInfo>()) };
 
     let result = ec_command(CrosEcCmds::GetChipInfo as u32, 0, params_slice)
         .unwrap_or_else(|error| panic!("EC error: {error:?}"));
