@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use crosec_rs::commands::{
+use crosec::commands::{
     get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version,
 };
 
