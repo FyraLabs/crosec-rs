@@ -1,7 +1,7 @@
 use crate::commands::CrosEcCmd;
-use crate::crosec::dev::ec_command;
-use crate::crosec::dev::BUF_SIZE;
-use crate::crosec::EcCmdResult;
+use crate::dev::ec_command;
+use crate::dev::BUF_SIZE;
+use crate::EcCmdResult;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::mem::size_of;

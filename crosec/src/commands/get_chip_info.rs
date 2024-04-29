@@ -1,6 +1,6 @@
 use crate::commands::CrosEcCmd;
-use crate::crosec::dev::ec_command;
-use crate::crosec::EcCmdResult;
+use crate::dev::ec_command;
+use crate::EcCmdResult;
 use std::mem::size_of;
 use std::slice;
 

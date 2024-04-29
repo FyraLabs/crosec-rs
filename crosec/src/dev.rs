@@ -1,6 +1,6 @@
 use crate::commands::CrosEcCmd;
-use crate::crosec::EcCmdResult;
-use crate::crosec::EcError;
+use crate::EcCmdResult;
+use crate::EcError;
 use nix::ioctl_readwrite;
 use num_traits::FromPrimitive;
 use std::os::unix::io::AsRawFd;
