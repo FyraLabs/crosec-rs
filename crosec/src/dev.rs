@@ -29,8 +29,6 @@ struct CrosEcCommandV2 {
     data: [u8; IN_SIZE],
 }
 
-const DEV_PATH: &str = "/dev/cros_ec";
-
 static mut CROS_EC_FD: Option<std::fs::File> = None;
 
 const CROS_EC_IOC_MAGIC: u8 = 0xEC;
@@ -40,15 +38,15 @@ fn get_fildes() -> i32 {
     unsafe { CROS_EC_FD.as_ref().unwrap().as_raw_fd() }
 }
 
-fn init() {
-    match std::fs::File::open(DEV_PATH) {
-        Err(why) => println!("Failed to open {DEV_PATH}. Because: {why:?}"),
+fn init(dev_path: String) {
+    match std::fs::File::open(dev_path.clone()) {
+        Err(why) => println!("Failed to open {dev_path}. Because: {why:?}"),
         Ok(file) => unsafe { CROS_EC_FD = Some(file) },
     };
 }
 
-pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8]) -> EcCmdResult<Vec<u8>> {
-    init();
+pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_path: String) -> EcCmdResult<Vec<u8>> {
+    init(dev_path);
 
     let size = std::cmp::min(IN_SIZE, data.len());
 

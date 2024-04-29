@@ -1,9 +1,16 @@
 pub mod commands;
 pub mod dev;
 
+use crate::commands::CrosEcCmd;
+use dev::dev_ec_command;
 use nix::errno::Errno;
 use num_derive::FromPrimitive;
 use thiserror::Error;
+
+// In the future, portio should be supported as well
+pub enum EcInterface {
+    Dev(String),
+}
 
 #[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum EcResponseStatus {
@@ -41,3 +48,11 @@ pub enum EcError {
 }
 
 pub type EcCmdResult<T> = Result<T, EcError>;
+
+pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], interface: EcInterface) -> EcCmdResult<Vec<u8>> {
+    match interface {
+        EcInterface::Dev(path) => dev_ec_command(command, command_version, data, path),
+        // Default to dev if all else fails
+        _ => dev_ec_command(command, command_version, data, String::from("/dev/cros_ec")),
+    }
+}

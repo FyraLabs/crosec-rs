@@ -1,6 +1,4 @@
-use crate::commands::CrosEcCmd;
-use crate::dev::ec_command;
-use crate::EcCmdResult;
+use crate::{commands::CrosEcCmd, ec_command, EcInterface, EcCmdResult};
 use std::mem::size_of;
 use std::slice;
 
@@ -24,7 +22,7 @@ pub fn ec_cmd_hello() -> EcCmdResult<bool> {
     let params_ptr = &params as *const _ as *const u8;
     let params_slice = unsafe { slice::from_raw_parts(params_ptr, size_of::<EcParamsHello>()) };
 
-    let result = ec_command(CrosEcCmd::Hello, 0, params_slice)?;
+    let result = ec_command(CrosEcCmd::Hello, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
     let response: EcResponseHello = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
     Ok(response.out_data == EXPECTED_OUTPUT)
