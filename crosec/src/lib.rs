@@ -10,6 +10,7 @@ use thiserror::Error;
 // In the future, portio should be supported as well
 pub enum EcInterface {
     Dev(String),
+    Default,
 }
 
 #[derive(FromPrimitive, Debug, Copy, Clone)]
@@ -52,7 +53,6 @@ pub type EcCmdResult<T> = Result<T, EcError>;
 pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], interface: EcInterface) -> EcCmdResult<Vec<u8>> {
     match interface {
         EcInterface::Dev(path) => dev_ec_command(command, command_version, data, path),
-        // Default to dev if all else fails
-        _ => dev_ec_command(command, command_version, data, String::from("/dev/cros_ec")),
+        EcInterface::Default => dev_ec_command(command, command_version, data, String::from("/dev/cros_ec")),
     }
 }
