@@ -52,7 +52,7 @@ pub type EcCmdResult<T> = Result<T, EcError>;
 
 pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], interface: EcInterface) -> EcCmdResult<Vec<u8>> {
     match interface {
-        EcInterface::Dev(path) => dev_ec_command(command, command_version, data, path),
-        EcInterface::Default => dev_ec_command(command, command_version, data, String::from("/dev/cros_ec")),
+        EcInterface::Dev(path) => dev_ec_command(command, command_version, data, &path),
+        EcInterface::Default => dev_ec_command(command, command_version, data, "/dev/cros_ec"),
     }
 }
