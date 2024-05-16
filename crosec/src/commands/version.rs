@@ -42,8 +42,8 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
     let result = ec_command(CrosEcCmd::Version, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
     let response: EcResponseVersionV1 = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
-    let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or(String::from(""));
-    let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or(String::from(""));
+    let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or_default();
+    let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or_default();
 
     let image = match FromPrimitive::from_u32(response.current_image) {
         Some(EcImage::Unknown) => String::from("Unknown"),
