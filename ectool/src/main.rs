@@ -4,6 +4,7 @@ use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use num_traits::cast::FromPrimitive;
+use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
 
 #[derive(Parser)]
 struct Cli {
@@ -25,6 +26,12 @@ enum Commands {
     CmdVersions {
         command: u32
     },
+    /// Set target fan RPM
+    SetFanTargetRpm {
+        rpm: u32,
+        #[arg()]
+        index: Option<u8>
+    }
 }
 
 fn main() -> Result<()> {
@@ -68,6 +75,17 @@ fn main() -> Result<()> {
                 },
                 None => {
                     println!("Unknown Command");
+                }
+            }
+        },
+        Commands::SetFanTargetRpm {rpm, index} => {
+            ec_cmd_set_fan_target_rpm(rpm, index)?;
+            match index {
+                Some(index) => {
+                    println!("Set RPM to {rpm} for fan {index}");
+                },
+                None => {
+                    println!("Set RPM to {rpm} for all fans");
                 }
             }
         }
