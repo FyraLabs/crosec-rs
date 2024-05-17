@@ -1,9 +1,9 @@
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
-use crosec::commands::{
-    get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version,
-};
+use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version};
 use crosec::commands::board_version::ec_cmd_board_version;
+use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
+use num_traits::cast::FromPrimitive;
 
 #[derive(Parser)]
 struct Cli {
@@ -21,6 +21,10 @@ enum Commands {
     ChipInfo,
     /// Prints the board version
     BoardVersion,
+    /// Prints supported version mask for a command number
+    CmdVersions {
+        command: u32
+    },
 }
 
 fn main() -> Result<()> {
@@ -55,6 +59,17 @@ fn main() -> Result<()> {
         Commands::BoardVersion => {
             let board_version = ec_cmd_board_version()?;
             println!("Board version: {board_version}");
+        },
+        Commands::CmdVersions {command} => {
+            match CrosEcCmd::from_u32(command) {
+                Some(cmd) => {
+                    let versions = ec_cmd_get_cmd_versions(cmd)?;
+                    println!("Versions: {versions:#b}");
+                },
+                None => {
+                    println!("Unknown Command");
+                }
+            }
         }
     }
 
