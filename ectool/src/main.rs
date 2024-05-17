@@ -4,6 +4,7 @@ use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use num_traits::cast::FromPrimitive;
+use crosec::commands::get_features::ec_cmd_get_features;
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
 
 #[derive(Parser)]
@@ -31,7 +32,9 @@ enum Commands {
         rpm: u32,
         #[arg()]
         index: Option<u8>
-    }
+    },
+    /// Get supported features
+    GetFeatures
 }
 
 fn main() -> Result<()> {
@@ -88,6 +91,10 @@ fn main() -> Result<()> {
                     println!("Set RPM to {rpm} for all fans");
                 }
             }
+        },
+        Commands::GetFeatures => {
+            let features = ec_cmd_get_features()?;
+            println!("EC supported features: {features:#b}");
         }
     }
 
