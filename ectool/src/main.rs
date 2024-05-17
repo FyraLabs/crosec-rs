@@ -3,6 +3,7 @@ use color_eyre::eyre::Result;
 use crosec::commands::{
     get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version,
 };
+use crosec::commands::board_version::ec_cmd_board_version;
 
 #[derive(Parser)]
 struct Cli {
@@ -17,7 +18,9 @@ enum Commands {
     /// Prints EC version
     Version,
     /// Prints chip info
-    ChipInfo
+    ChipInfo,
+    /// Prints the board version
+    BoardVersion,
 }
 
 fn main() -> Result<()> {
@@ -33,7 +36,7 @@ fn main() -> Result<()> {
             } else {
                 println!("EC did not say hello :(");
             }
-        },
+        }
         Commands::Version => {
             let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) = ec_cmd_version()?;
             println!("RO version:    {ro_ver}");
@@ -41,13 +44,17 @@ fn main() -> Result<()> {
             println!("Firmware copy: {firmware_copy}");
             println!("Build info:    {build_info}");
             println!("Tool version:  {tool_version}");
-        },
+        }
         Commands::ChipInfo => {
             let (vendor, name, revision) = ec_cmd_get_chip_info()?;
             println!("Chip info:");
             println!("  vendor:    {vendor}");
             println!("  name:      {name}");
             println!("  revision:  {revision}");
+        },
+        Commands::BoardVersion => {
+            let board_version = ec_cmd_board_version()?;
+            println!("Board version: {board_version}");
         }
     }
 
