@@ -1,11 +1,12 @@
 use std::mem::size_of;
 
 use bytemuck::{Pod, Zeroable};
+use nix::libc::c_int;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use crate::{commands::CrosEcCmd, ec_command, EcCmdResult, EcInterface};
-use crate::dev::BUF_SIZE;
+use crate::{commands::CrosEcCmd, EcCmdResult};
+use crate::ec_command::{BUF_SIZE, ec_command};
 
 const TOOLVERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -28,7 +29,7 @@ enum EcImage {
     RwB = 4,
 }
 
-pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)> {
+pub fn ec_cmd_version(fd: c_int) -> EcCmdResult<(String, String, String, String, String)> {
     let params = EcResponseVersionV1 {
         version_string_ro: [0; 32],
         version_string_rw: [0; 32],
@@ -40,7 +41,7 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
     let build_string: [u8; BUF_SIZE] = [0; BUF_SIZE];
     let params_slice = bytemuck::bytes_of(&params);
 
-    let mut result = ec_command(CrosEcCmd::Version, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
+    let mut result = ec_command(CrosEcCmd::Version, 0, params_slice, fd)?;
     result.resize(size_of::<EcResponseVersionV1>(), Default::default());
     let response = bytemuck::from_bytes::<EcResponseVersionV1>(&result);
 
@@ -58,7 +59,7 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
 
     let build_string_slice = &build_string;
 
-    let result = ec_command(CrosEcCmd::GetBuildInfo, 0, build_string_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
+    let result = ec_command(CrosEcCmd::GetBuildInfo, 0, build_string_slice, fd)?;
 
     let build_info = String::from_utf8(result).unwrap_or(String::from(""));
     Ok((ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION)))

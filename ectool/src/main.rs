@@ -1,11 +1,16 @@
+use std::fs::File;
+use std::os::fd::AsRawFd;
+
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
+use num_traits::cast::FromPrimitive;
+
 use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version};
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
-use num_traits::cast::FromPrimitive;
 use crosec::commands::get_features::ec_cmd_get_features;
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
+use crosec::get_number_of_fans::get_number_of_fans;
 
 #[derive(Parser)]
 struct Cli {
@@ -31,20 +36,24 @@ enum Commands {
     SetFanTargetRpm {
         rpm: u32,
         #[arg()]
-        index: Option<u8>
+        index: Option<u8>,
     },
     /// Get supported features
-    GetFeatures
+    GetFeatures,
+    /// Get number of fans
+    GetNumberOfFans,
 }
 
 fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli = Cli::parse();
+    let file = File::open("/dev/cros_ec").unwrap();
+    let fd = file.as_raw_fd();
 
     match cli.command {
         Commands::Hello => {
-            let status = ec_cmd_hello()?;
+            let status = ec_cmd_hello(fd)?;
             if status {
                 println!("EC says hello!");
             } else {
@@ -52,7 +61,7 @@ fn main() -> Result<()> {
             }
         }
         Commands::Version => {
-            let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) = ec_cmd_version()?;
+            let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) = ec_cmd_version(fd)?;
             println!("RO version:    {ro_ver}");
             println!("RW version:    {rw_ver}");
             println!("Firmware copy: {firmware_copy}");
@@ -60,41 +69,45 @@ fn main() -> Result<()> {
             println!("Tool version:  {tool_version}");
         }
         Commands::ChipInfo => {
-            let (vendor, name, revision) = ec_cmd_get_chip_info()?;
+            let (vendor, name, revision) = ec_cmd_get_chip_info(fd)?;
             println!("Chip info:");
             println!("  vendor:    {vendor}");
             println!("  name:      {name}");
             println!("  revision:  {revision}");
-        },
+        }
         Commands::BoardVersion => {
-            let board_version = ec_cmd_board_version()?;
+            let board_version = ec_cmd_board_version(fd)?;
             println!("Board version: {board_version}");
-        },
-        Commands::CmdVersions {command} => {
+        }
+        Commands::CmdVersions { command } => {
             match CrosEcCmd::from_u32(command) {
                 Some(cmd) => {
-                    let versions = ec_cmd_get_cmd_versions(cmd)?;
+                    let versions = ec_cmd_get_cmd_versions(fd, cmd)?;
                     println!("Versions: {versions:#b}");
-                },
+                }
                 None => {
                     println!("Unknown Command");
                 }
             }
-        },
-        Commands::SetFanTargetRpm {rpm, index} => {
-            ec_cmd_set_fan_target_rpm(rpm, index)?;
+        }
+        Commands::SetFanTargetRpm { rpm, index } => {
+            ec_cmd_set_fan_target_rpm(fd, rpm, index)?;
             match index {
                 Some(index) => {
                     println!("Set RPM to {rpm} for fan {index}");
-                },
+                }
                 None => {
                     println!("Set RPM to {rpm} for all fans");
                 }
             }
-        },
+        }
         Commands::GetFeatures => {
-            let features = ec_cmd_get_features()?;
+            let features = ec_cmd_get_features(fd)?;
             println!("EC supported features: {features:#b}");
+        }
+        Commands::GetNumberOfFans => {
+            let number_of_fans = get_number_of_fans(fd).unwrap();
+            println!("Number of fans: {number_of_fans}");
         }
     }
 

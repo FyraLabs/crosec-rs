@@ -1,8 +1,11 @@
+use std::ffi::c_int;
 use std::mem::size_of;
+
 use bytemuck::{Pod, Zeroable};
 
-use crate::{ec_command, EcCmdResult, EcInterface};
 use crate::commands::CrosEcCmd;
+use crate::ec_command::ec_command;
+use crate::EcCmdResult;
 
 #[repr(C)]
 #[derive(Pod, Zeroable, Copy, Clone)]
@@ -21,7 +24,7 @@ impl EcParamsSetFanTargetRpmV1 {
     }
 }
 
-pub fn ec_cmd_set_fan_target_rpm(rpm: u32, fan_index: Option<u8>) -> EcCmdResult<()> {
+pub fn ec_cmd_set_fan_target_rpm(fd: c_int, rpm: u32, fan_index: Option<u8>) -> EcCmdResult<()> {
     // v0 can only set the RPM for all fans
     // v1 can set the RPM for a specific fan
     match fan_index {
@@ -29,12 +32,12 @@ pub fn ec_cmd_set_fan_target_rpm(rpm: u32, fan_index: Option<u8>) -> EcCmdResult
             ec_command(CrosEcCmd::SetFanTargetRpm, 1, &EcParamsSetFanTargetRpmV1 {
                 rpm,
                 fan_index: index,
-            }.to_le_bytes(), EcInterface::Default)?;
+            }.to_le_bytes(), fd)?;
         }
         None => {
             ec_command(CrosEcCmd::SetFanTargetRpm, 0, &bytemuck::bytes_of(&EcParamsSetFanTargetRpmV0 {
                 rpm
-            }), EcInterface::Default)?;
+            }), fd)?;
         }
     };
     Ok(())

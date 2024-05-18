@@ -1,10 +1,9 @@
-use std::fs::File;
+use std::os::raw::c_int;
 use crate::commands::CrosEcCmd;
-use crate::EcCmdResult;
+use crate::{CROS_EC_IOC_MAGIC, EcCmdResult};
 use crate::EcError;
 use nix::ioctl_readwrite;
 use num_traits::FromPrimitive;
-use std::os::unix::io::AsRawFd;
 
 use super::EcResponseStatus;
 
@@ -31,10 +30,9 @@ struct CrosEcCommandV2 {
     data: [u8; IN_SIZE],
 }
 
-const CROS_EC_IOC_MAGIC: u8 = 0xEC;
 ioctl_readwrite!(cros_ec_cmd, CROS_EC_IOC_MAGIC, 0, _CrosEcCommandV2);
 
-pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_path: &str) -> EcCmdResult<Vec<u8>> {
+pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], fd: c_int) -> EcCmdResult<Vec<u8>> {
 
     let size = std::cmp::min(IN_SIZE, data.len());
 
@@ -50,10 +48,7 @@ pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_
     cmd.data[0..size].copy_from_slice(data);
     let cmd_ptr = &mut cmd as *mut _ as *mut _CrosEcCommandV2;
 
-    let cros_ec_fd = File::open(dev_path).unwrap();
-    let fildes = cros_ec_fd.as_raw_fd();
-
-    let result = unsafe { cros_ec_cmd(fildes, cmd_ptr) };
+    let result = unsafe { cros_ec_cmd(fd, cmd_ptr) };
     let status =
         FromPrimitive::from_u32(cmd.result).ok_or(EcError::UnknownResponseCode(cmd.result))?;
     let EcResponseStatus::Success = status else {

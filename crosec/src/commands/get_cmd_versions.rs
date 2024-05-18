@@ -1,6 +1,9 @@
 use bytemuck::{Pod, Zeroable};
+use nix::libc::c_int;
+
 use crate::commands::CrosEcCmd;
-use crate::{ec_command, EcCmdResult, EcInterface};
+use crate::ec_command::ec_command;
+use crate::EcCmdResult;
 
 #[repr(C)]
 #[derive(Pod, Copy, Clone, Zeroable)]
@@ -23,17 +26,17 @@ struct EcResponseGetCmdVersion {
 pub const V0: u32 = 0b01;
 pub const V1: u32 = 0b10;
 
-pub fn ec_cmd_get_cmd_versions(cmd: CrosEcCmd) -> EcCmdResult<u32> {
+pub fn ec_cmd_get_cmd_versions(fd: c_int, cmd: CrosEcCmd) -> EcCmdResult<u32> {
     let result = match ec_command(CrosEcCmd::GetCmdVersions, 1, bytemuck::bytes_of(&EcParamsGetCmdVersionV1 {
         cmd: cmd as u16
-    }), EcInterface::Default) {
+    }), fd) {
         Ok(response) => {
             Ok(response)
         },
         Err(_e) => {
             ec_command(CrosEcCmd::GetCmdVersions, 0, bytemuck::bytes_of(&EcParamsGetCmdVersionV0 {
                 cmd: cmd as u8
-            }), EcInterface::Default)
+            }), fd)
         }
     }?;
     let response = bytemuck::from_bytes::<EcResponseGetCmdVersion>(&result);

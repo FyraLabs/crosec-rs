@@ -1,11 +1,11 @@
-pub mod commands;
-pub mod dev;
-
-use crate::commands::CrosEcCmd;
-use dev::dev_ec_command;
 use nix::errno::Errno;
 use num_derive::FromPrimitive;
 use thiserror::Error;
+
+pub mod commands;
+pub mod ec_command;
+pub mod read_mem_any;
+pub mod get_number_of_fans;
 
 // In the future, portio should be supported as well
 pub enum EcInterface {
@@ -50,9 +50,7 @@ pub enum EcError {
 
 pub type EcCmdResult<T> = Result<T, EcError>;
 
-pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], interface: EcInterface) -> EcCmdResult<Vec<u8>> {
-    match interface {
-        EcInterface::Dev(path) => dev_ec_command(command, command_version, data, &path),
-        EcInterface::Default => dev_ec_command(command, command_version, data, "/dev/cros_ec"),
-    }
-}
+pub const EC_FAN_SPEED_ENTRIES: usize = 4;
+pub const EC_FAN_SPEED_NOT_PRESENT: u16 = 0xffff;
+pub const EC_MEM_MAP_FAN: u8 = 0x10;
+pub const CROS_EC_IOC_MAGIC: u8 = 0xEC;
