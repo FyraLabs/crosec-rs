@@ -52,5 +52,6 @@ pub type EcCmdResult<T> = Result<T, EcError>;
 
 pub const EC_FAN_SPEED_ENTRIES: usize = 4;
 pub const EC_FAN_SPEED_NOT_PRESENT: u16 = 0xffff;
+pub const EC_FAN_SPEED_STALLED: u16 = 0xfffe;
 pub const EC_MEM_MAP_FAN: u8 = 0x10;
 pub const CROS_EC_IOC_MAGIC: u8 = 0xEC;

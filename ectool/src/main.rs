@@ -8,9 +8,11 @@ use num_traits::cast::FromPrimitive;
 use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version};
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
-use crosec::commands::get_features::ec_cmd_get_features;
+use crosec::commands::get_features::{ec_cmd_get_features, EC_FEATURE_PWM_FAN};
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
-use crosec::get_number_of_fans::get_number_of_fans;
+use crosec::{EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN};
+use crosec::get_number_of_fans::{Error, get_number_of_fans};
+use crosec::read_mem_any::read_mem_any;
 
 #[derive(Parser)]
 struct Cli {
@@ -42,6 +44,8 @@ enum Commands {
     GetFeatures,
     /// Get number of fans
     GetNumberOfFans,
+    /// Get the speed of fans, in RPM
+    GetFanRpm,
 }
 
 fn main() -> Result<()> {
@@ -108,6 +112,25 @@ fn main() -> Result<()> {
         Commands::GetNumberOfFans => {
             let number_of_fans = get_number_of_fans(fd).unwrap();
             println!("Number of fans: {number_of_fans}");
+        }
+        Commands::GetFanRpm => {
+            let features = ec_cmd_get_features(fd).map_err(|e| Error::GetFeatures(e))?;
+            if features & EC_FEATURE_PWM_FAN != 0 {
+                read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN).map_err(|e| Error::ReadMem(e))?
+                    .into_iter()
+                    .enumerate()
+                    .for_each(|(i, fan)| match fan {
+                        EC_FAN_SPEED_NOT_PRESENT => {}
+                        EC_FAN_SPEED_STALLED => {
+                            println!("Fan {i} stalled");
+                        }
+                        fan_speed => {
+                            println!("Fan {i} RPM: {fan_speed}");
+                        }
+                    });
+            } else {
+                println!("No fans");
+            };
         }
     }
 
