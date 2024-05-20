@@ -11,6 +11,7 @@ use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use crosec::commands::get_features::{ec_cmd_get_features, EC_FEATURE_PWM_FAN};
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
 use crosec::{EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN};
+use crosec::console::console;
 use crosec::get_number_of_fans::{Error, get_number_of_fans};
 use crosec::read_mem_any::read_mem_any;
 
@@ -46,6 +47,8 @@ enum Commands {
     GetNumberOfFans,
     /// Get the speed of fans, in RPM
     GetFanRpm,
+    /// Prints the last output to the EC debug console
+    Console,
 }
 
 fn main() -> Result<()> {
@@ -131,6 +134,11 @@ fn main() -> Result<()> {
             } else {
                 println!("No fans");
             };
+        },
+        Commands::Console => {
+            let console = console(fd)?;
+            let console = console.trim();
+            println!("{console}");
         }
     }
 

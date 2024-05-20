@@ -12,6 +12,8 @@ pub enum CrosEcCmd {
     GetCmdVersions = 0x0008,
     GetFeatures = 0x000D,
     SetFanTargetRpm = 0x0021,
+    ConsoleSnapshot = 0x0097,
+    ConsoleRead = 0x0098,
 }
 
 pub mod get_chip_info;

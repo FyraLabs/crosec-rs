@@ -6,6 +6,7 @@ pub mod commands;
 pub mod ec_command;
 pub mod read_mem_any;
 pub mod get_number_of_fans;
+pub mod console;
 
 // In the future, portio should be supported as well
 pub enum EcInterface {
