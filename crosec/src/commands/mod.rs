@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 
-#[derive(Copy, Clone, FromPrimitive)]
+#[derive(Copy, Clone, FromPrimitive, Debug)]
 #[repr(u32)]
 pub enum CrosEcCmd {
     Hello = 0x0001,
@@ -14,6 +14,7 @@ pub enum CrosEcCmd {
     SetFanTargetRpm = 0x0021,
     ConsoleSnapshot = 0x0097,
     ConsoleRead = 0x0098,
+    BatteryGetStatic = 0x0600,
 }
 
 pub mod get_chip_info;
