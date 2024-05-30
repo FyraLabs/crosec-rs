@@ -23,8 +23,9 @@ struct EcResponseGetCmdVersion {
     version_mask: u32,
 }
 
-pub const V0: u32 = 0b01;
-pub const V1: u32 = 0b10;
+pub const V0: u32 = 0b001;
+pub const V1: u32 = 0b010;
+pub const V2: u32 = 0b100;
 
 pub fn ec_cmd_get_cmd_versions(fd: c_int, cmd: CrosEcCmd) -> EcCmdResult<u32> {
     let result = match ec_command(CrosEcCmd::GetCmdVersions, 1, bytemuck::bytes_of(&EcParamsGetCmdVersionV1 {

@@ -5,16 +5,24 @@ use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 use num_traits::cast::FromPrimitive;
 
-use crosec::commands::{CrosEcCmd, get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version};
+use crosec::battery::battery;
 use crosec::commands::board_version::ec_cmd_board_version;
+use crosec::commands::charge_control::{
+    get_charge_control, set_charge_control, supports_get_and_sustainer, Sustainer,
+};
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use crosec::commands::get_features::{ec_cmd_get_features, EC_FEATURE_PWM_FAN};
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
-use crosec::{EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN};
-use crosec::battery::battery;
+use crosec::commands::{
+    charge_control, get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello,
+    version::ec_cmd_version, CrosEcCmd,
+};
 use crosec::console::console;
-use crosec::get_number_of_fans::{Error, get_number_of_fans};
+use crosec::get_number_of_fans::{get_number_of_fans, Error};
 use crosec::read_mem_any::read_mem_any;
+use crosec::{
+    EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN,
+};
 
 #[derive(Parser)]
 struct Cli {
@@ -33,9 +41,7 @@ enum Commands {
     /// Prints the board version
     BoardVersion,
     /// Prints supported version mask for a command number
-    CmdVersions {
-        command: u32
-    },
+    CmdVersions { command: u32 },
     /// Set target fan RPM
     SetFanTargetRpm {
         rpm: u32,
@@ -51,7 +57,26 @@ enum Commands {
     /// Prints the last output to the EC debug console
     Console,
     /// Prints battery info
-    Battery
+    Battery,
+    ChargeControl {
+        #[command(subcommand)]
+        command: Option<ChargeControlSubcommands>,
+    },
+}
+
+#[derive(Subcommand)]
+enum ChargeControlSubcommands {
+    /// Charge the battery with external power and power the device with external power
+    Normal {
+        /// Minimum battery % to keep the battery at
+        min_percent: Option<u8>,
+        /// Maximum battery & to keep the battery at. If this isn't specified, this will be set to the same as the min %.
+        max_percent: Option<u8>,
+    },
+    /// Power the device with external power, but do not charge the battery
+    Idle,
+    /// Power the device with the battery and do not charge the battery
+    Discharge,
 }
 
 fn main() -> Result<()> {
@@ -89,17 +114,15 @@ fn main() -> Result<()> {
             let board_version = ec_cmd_board_version(fd)?;
             println!("Board version: {board_version}");
         }
-        Commands::CmdVersions { command } => {
-            match CrosEcCmd::from_u32(command) {
-                Some(cmd) => {
-                    let versions = ec_cmd_get_cmd_versions(fd, cmd)?;
-                    println!("Versions: {versions:#b}");
-                }
-                None => {
-                    println!("Unknown Command");
-                }
+        Commands::CmdVersions { command } => match CrosEcCmd::from_u32(command) {
+            Some(cmd) => {
+                let versions = ec_cmd_get_cmd_versions(fd, cmd)?;
+                println!("Versions: {versions:#b}");
             }
-        }
+            None => {
+                println!("Unknown Command");
+            }
+        },
         Commands::SetFanTargetRpm { rpm, index } => {
             ec_cmd_set_fan_target_rpm(fd, rpm, index)?;
             match index {
@@ -122,7 +145,8 @@ fn main() -> Result<()> {
         Commands::GetFanRpm => {
             let features = ec_cmd_get_features(fd).map_err(|e| Error::GetFeatures(e))?;
             if features & EC_FEATURE_PWM_FAN != 0 {
-                read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN).map_err(|e| Error::ReadMem(e))?
+                read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN)
+                    .map_err(|e| Error::ReadMem(e))?
                     .into_iter()
                     .enumerate()
                     .for_each(|(i, fan)| match fan {
@@ -137,16 +161,56 @@ fn main() -> Result<()> {
             } else {
                 println!("No fans");
             };
-        },
+        }
         Commands::Console => {
             let console = console(fd)?;
             let console = console.trim();
             println!("{console}");
-        },
+        }
         Commands::Battery => {
             let battery_info = battery(fd)?;
             println!("{battery_info:#?}");
         }
+        Commands::ChargeControl { command } => match command {
+            None => {
+                if supports_get_and_sustainer(fd)? {
+                    let charge_control = get_charge_control(fd)?;
+                    println!("{charge_control:#?}");
+                } else {
+                    println!("This EC doesn't support getting charge control");
+                }
+            }
+            Some(command) => match command {
+                ChargeControlSubcommands::Normal {
+                    min_percent,
+                    max_percent,
+                } => match min_percent {
+                    Some(min_percent) => {
+                        let max_percent = max_percent.unwrap_or(min_percent);
+                        set_charge_control(
+                            fd,
+                            charge_control::ChargeControl::Normal(Some(Sustainer {
+                                min_percent: min_percent as i8,
+                                max_percent: max_percent as i8,
+                            })),
+                        )?;
+                        println!("Set charge control to normal with sustainer from {min_percent}% to {max_percent}%");
+                    }
+                    None => {
+                        set_charge_control(fd, charge_control::ChargeControl::Normal(None))?;
+                        println!("Set charge control to normal");
+                    }
+                },
+                ChargeControlSubcommands::Idle => {
+                    println!("Set charge control to idle");
+                    set_charge_control(fd, charge_control::ChargeControl::Idle)?;
+                }
+                ChargeControlSubcommands::Discharge => {
+                    println!("Set charge control to discharge");
+                    set_charge_control(fd, charge_control::ChargeControl::Discharge)?;
+                }
+            },
+        },
     }
 
     Ok(())

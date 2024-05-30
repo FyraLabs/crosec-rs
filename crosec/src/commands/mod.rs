@@ -12,6 +12,7 @@ pub enum CrosEcCmd {
     GetCmdVersions = 0x0008,
     GetFeatures = 0x000D,
     SetFanTargetRpm = 0x0021,
+    ChargeControl = 0x0096,
     ConsoleSnapshot = 0x0097,
     ConsoleRead = 0x0098,
     BatteryGetStatic = 0x0600,
@@ -25,3 +26,4 @@ pub mod set_fan_target_rpm;
 pub mod get_cmd_versions;
 pub mod get_features;
 pub mod read_mem;
+pub mod charge_control;
