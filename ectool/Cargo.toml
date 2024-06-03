@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 crosec = { version = "0.1.0", path = "../crosec" }
 color-eyre = "0.6.2"
+bytemuck = "1.16.0"

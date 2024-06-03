@@ -1,3 +1,4 @@
+use std::fs::File;
 use crate::commands::CrosEcCmd;
 use crate::EcCmdResult;
 use crate::EcError;
@@ -19,6 +20,7 @@ struct _CrosEcCommandV2 {
     result: u32,
     data: [u8; 0],
 }
+
 #[repr(C)]
 struct CrosEcCommandV2 {
     version: u32,
@@ -29,24 +31,10 @@ struct CrosEcCommandV2 {
     data: [u8; IN_SIZE],
 }
 
-static mut CROS_EC_FD: Option<std::fs::File> = None;
-
 const CROS_EC_IOC_MAGIC: u8 = 0xEC;
 ioctl_readwrite!(cros_ec_cmd, CROS_EC_IOC_MAGIC, 0, _CrosEcCommandV2);
 
-fn get_fildes() -> i32 {
-    unsafe { CROS_EC_FD.as_ref().unwrap().as_raw_fd() }
-}
-
-fn init(dev_path: String) {
-    match std::fs::File::open(dev_path.clone()) {
-        Err(why) => println!("Failed to open {dev_path}. Because: {why:?}"),
-        Ok(file) => unsafe { CROS_EC_FD = Some(file) },
-    };
-}
-
-pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_path: String) -> EcCmdResult<Vec<u8>> {
-    init(dev_path);
+pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_path: &str) -> EcCmdResult<Vec<u8>> {
 
     let size = std::cmp::min(IN_SIZE, data.len());
 
@@ -62,15 +50,16 @@ pub fn dev_ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], dev_
     cmd.data[0..size].copy_from_slice(data);
     let cmd_ptr = &mut cmd as *mut _ as *mut _CrosEcCommandV2;
 
-    unsafe {
-        let result = cros_ec_cmd(get_fildes(), cmd_ptr);
-        let status =
-            FromPrimitive::from_u32(cmd.result).ok_or(EcError::UnknownResponseCode(cmd.result))?;
-        let EcResponseStatus::Success = status else {
-            return Err(EcError::Response(status));
-        };
-        result
-            .map(|result| cmd.data[0..result as usize].to_vec())
-            .map_err(|err| EcError::DeviceError(err))
-    }
+    let cros_ec_fd = File::open(dev_path).unwrap();
+    let fildes = cros_ec_fd.as_raw_fd();
+
+    let result = unsafe { cros_ec_cmd(fildes, cmd_ptr) };
+    let status =
+        FromPrimitive::from_u32(cmd.result).ok_or(EcError::UnknownResponseCode(cmd.result))?;
+    let EcResponseStatus::Success = status else {
+        return Err(EcError::Response(status));
+    };
+    result
+        .map(|result| cmd.data[0..result as usize].to_vec())
+        .map_err(|err| EcError::DeviceError(err))
 }

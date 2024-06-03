@@ -1,13 +1,16 @@
-use crate::{commands::CrosEcCmd, ec_command, EcInterface, EcCmdResult};
-use crate::dev::BUF_SIZE;
+use std::mem::size_of;
+
+use bytemuck::{Pod, Zeroable};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use std::mem::size_of;
-use std::slice;
+
+use crate::{commands::CrosEcCmd, ec_command, EcCmdResult, EcInterface};
+use crate::dev::BUF_SIZE;
 
 const TOOLVERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[repr(C, align(4))]
+#[derive(Pod, Zeroable, Copy, Clone)]
 struct EcResponseVersionV1 {
     version_string_ro: [u8; 32],
     version_string_rw: [u8; 32],
@@ -35,12 +38,11 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
     };
 
     let build_string: [u8; BUF_SIZE] = [0; BUF_SIZE];
-    let params_ptr = &params as *const _ as *const u8;
-    let params_slice =
-        unsafe { slice::from_raw_parts(params_ptr, size_of::<EcResponseVersionV1>()) };
+    let params_slice = bytemuck::bytes_of(&params);
 
-    let result = ec_command(CrosEcCmd::Version, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
-    let response: EcResponseVersionV1 = unsafe { std::ptr::read(result.as_ptr() as *const _) };
+    let mut result = ec_command(CrosEcCmd::Version, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
+    result.resize(size_of::<EcResponseVersionV1>(), Default::default());
+    let response = bytemuck::from_bytes::<EcResponseVersionV1>(&result);
 
     let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or(String::from(""));
     let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or(String::from(""));
@@ -54,12 +56,10 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
         None => String::from("Unknown"),
     };
 
-    let build_string_ptr = &build_string as *const _ as *const u8;
-    let build_string_slice = unsafe { slice::from_raw_parts(build_string_ptr, BUF_SIZE) };
+    let build_string_slice = &build_string;
 
     let result = ec_command(CrosEcCmd::GetBuildInfo, 0, build_string_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
-    let response: [u8; BUF_SIZE] = unsafe { std::ptr::read(result.as_ptr() as *const _) };
 
-    let build_info = String::from_utf8(response.to_vec()).unwrap_or(String::from(""));
+    let build_info = String::from_utf8(result).unwrap_or(String::from(""));
     Ok((ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION)))
 }
