@@ -22,9 +22,9 @@ pub fn ec_cmd_get_chip_info() -> EcCmdResult<(String, String, String)> {
     let result = ec_command(CrosEcCmd::GetChipInfo, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
     let response = bytemuck::from_bytes::<EcResponseGetChipInfo>(&result);
 
-    let vendor = String::from_utf8(response.vendor.to_vec()).unwrap_or(String::from(""));
-    let name = String::from_utf8(response.name.to_vec()).unwrap_or(String::from(""));
-    let revision = String::from_utf8(response.revision.to_vec()).unwrap_or(String::from(""));
+    let vendor = String::from_utf8(response.vendor.to_vec()).unwrap_or_default();
+    let name = String::from_utf8(response.name.to_vec()).unwrap_or_default();
+    let revision = String::from_utf8(response.revision.to_vec()).unwrap_or_default();
 
     Ok((vendor, name, revision))
 }
