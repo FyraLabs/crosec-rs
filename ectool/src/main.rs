@@ -3,6 +3,7 @@ use std::os::fd::AsRawFd;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
+use crosec::commands::fp_info::fp_info;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use num_traits::cast::FromPrimitive;
 
@@ -62,7 +63,9 @@ enum Commands {
     /// Prints the board version
     BoardVersion,
     /// Prints supported version mask for a command number
-    CmdVersions { command: u32 },
+    CmdVersions {
+        command: u32,
+    },
     /// Set target fan RPM
     SetFanTargetRpm {
         rpm: u32,
@@ -86,6 +89,7 @@ enum Commands {
         #[command(subcommand)]
         command: Option<ChargeControlSubcommands>,
     },
+    FpInfo,
 }
 
 #[derive(Subcommand)]
@@ -261,6 +265,12 @@ fn main() -> Result<()> {
                     }
                 },
             }
+        }
+        Commands::FpInfo => {
+            let file = File::open(CROS_FP_PATH).unwrap();
+            let fd = file.as_raw_fd();
+            let info = fp_info(fd)?;
+            println!("{info:#?}");
         }
     }
 

@@ -16,11 +16,13 @@ pub enum CrosEcCmd {
     ChargeControl = 0x0096,
     ConsoleSnapshot = 0x0097,
     ConsoleRead = 0x0098,
+    FpInfo = 0x0403,
     BatteryGetStatic = 0x0600,
 }
 
 pub mod board_version;
 pub mod charge_control;
+pub mod fp_info;
 pub mod get_chip_info;
 pub mod get_cmd_versions;
 pub mod get_features;
