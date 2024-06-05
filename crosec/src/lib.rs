@@ -10,12 +10,6 @@ pub mod get_number_of_fans;
 pub mod read_mem_any;
 pub mod read_mem_string;
 
-// In the future, portio should be supported as well
-pub enum EcInterface {
-    Dev(String),
-    Default,
-}
-
 #[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum EcResponseStatus {
     Success = 0,
