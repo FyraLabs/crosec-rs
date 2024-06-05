@@ -18,12 +18,14 @@ pub enum CrosEcCmd {
     ConsoleRead = 0x0098,
     FpInfo = 0x0403,
     FpStats = 0x0407,
+    FpSetSeed = 0x0408,
     BatteryGetStatic = 0x0600,
 }
 
 pub mod board_version;
 pub mod charge_control;
 pub mod fp_info;
+pub mod fp_set_seed;
 pub mod fp_stats;
 pub mod get_chip_info;
 pub mod get_cmd_versions;

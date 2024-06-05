@@ -4,6 +4,7 @@ use std::os::fd::AsRawFd;
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
 use crosec::commands::fp_info::fp_info;
+use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use num_traits::cast::FromPrimitive;
@@ -92,6 +93,9 @@ enum Commands {
     },
     FpInfo,
     FpStats,
+    FpSetSeed {
+        seed: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -279,6 +283,22 @@ fn main() -> Result<()> {
             let fd = file.as_raw_fd();
             let stats = fp_stats(fd)?;
             println!("{stats:#?}");
+        }
+        Commands::FpSetSeed { seed } => {
+            match <Vec<u8> as TryInto<[u8; FP_CONTEXT_TPM_BYTES]>>::try_into(
+                seed.as_bytes().to_owned(),
+            ) {
+                Ok(seed) => {
+                    let file = File::open(CROS_FP_PATH).unwrap();
+                    let fd = file.as_raw_fd();
+                    fp_set_seed(fd, seed)?;
+                    println!("Set fp seed");
+                }
+                Err(seed) => {
+                    let seed_len = seed.len();
+                    println!("The seed must be {FP_CONTEXT_TPM_BYTES} bytes long. The seed you inputted is {seed_len} bytes long.");
+                }
+            }
         }
     }
 
