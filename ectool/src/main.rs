@@ -4,6 +4,7 @@ use std::os::fd::AsRawFd;
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
 use crosec::commands::fp_info::fp_info;
+use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use num_traits::cast::FromPrimitive;
 
@@ -90,6 +91,7 @@ enum Commands {
         command: Option<ChargeControlSubcommands>,
     },
     FpInfo,
+    FpStats,
 }
 
 #[derive(Subcommand)]
@@ -271,6 +273,12 @@ fn main() -> Result<()> {
             let fd = file.as_raw_fd();
             let info = fp_info(fd)?;
             println!("{info:#?}");
+        }
+        Commands::FpStats => {
+            let file = File::open(CROS_FP_PATH).unwrap();
+            let fd = file.as_raw_fd();
+            let stats = fp_stats(fd)?;
+            println!("{stats:#?}");
         }
     }
 
