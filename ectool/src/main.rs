@@ -1,9 +1,11 @@
 use std::fs::File;
 use std::os::fd::AsRawFd;
+use std::str::FromStr;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
 use crosec::commands::fp_info::fp_info;
+use crosec::commands::fp_mode::{fp_mode, FpMode};
 use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
@@ -95,6 +97,9 @@ enum Commands {
     FpStats,
     FpSetSeed {
         seed: String,
+    },
+    FpMode {
+        mode: Vec<String>,
     },
 }
 
@@ -299,6 +304,22 @@ fn main() -> Result<()> {
                     println!("The seed must be {FP_CONTEXT_TPM_BYTES} bytes long. The seed you inputted is {seed_len} bytes long.");
                 }
             }
+        }
+        Commands::FpMode { mode } => {
+            let mode = if mode.len() > 0 {
+                let mut mode_number: u32 = 0;
+                for mode in mode {
+                    mode_number |= FpMode::from_str(&mode)? as u32;
+                }
+                mode_number
+            } else {
+                FpMode::DontChange as u32
+            };
+            let file = File::open(CROS_FP_PATH).unwrap();
+            let fd = file.as_raw_fd();
+            let mode = fp_mode(fd, mode)?;
+            let display = FpMode::display(mode);
+            println!("FP mode: {display}");
         }
     }
 

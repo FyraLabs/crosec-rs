@@ -10,4 +10,6 @@ bytemuck = { version = "1.16.0", features = ["derive"] }
 nix = { version = "0.27.1", features = ["ioctl"] }
 num-derive = "0.4.2"
 num-traits = "0.2.18"
+strum = "0.26.2"
+strum_macros = "0.26.4"
 thiserror = "1.0.57"
