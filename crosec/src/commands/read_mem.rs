@@ -1,7 +1,7 @@
-use std::ffi::c_int;
-use bytemuck::{Pod, Zeroable};
-use nix::{ioctl_readwrite};
 use crate::CROS_EC_IOC_MAGIC;
+use bytemuck::{Pod, Zeroable};
+use nix::ioctl_readwrite;
+use std::ffi::c_int;
 
 const EC_MEM_MAP_SIZE: usize = 255;
 

@@ -2,12 +2,12 @@ use nix::errno::Errno;
 use num_derive::FromPrimitive;
 use thiserror::Error;
 
-pub mod commands;
-pub mod ec_command;
-pub mod read_mem_any;
-pub mod get_number_of_fans;
-pub mod console;
 pub mod battery;
+pub mod commands;
+pub mod console;
+pub mod ec_command;
+pub mod get_number_of_fans;
+pub mod read_mem_any;
 pub mod read_mem_string;
 
 // In the future, portio should be supported as well
@@ -53,6 +53,8 @@ pub enum EcError {
 
 pub type EcCmdResult<T> = Result<T, EcError>;
 
+pub const CROS_EC_PATH: &str = "/dev/cros_ec";
+pub const CROS_FP_PATH: &str = "/dev/cros_fp";
 
 pub const EC_FAN_SPEED_ENTRIES: usize = 4;
 pub const EC_FAN_SPEED_NOT_PRESENT: u16 = 0xffff;

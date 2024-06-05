@@ -1,6 +1,6 @@
 use crate::commands::get_cmd_versions::{ec_cmd_get_cmd_versions, V2};
 use crate::commands::CrosEcCmd;
-use crate::ec_command::ec_command;
+use crate::ec_command::ec_command_bytemuck;
 use crate::EcCmdResult;
 use bytemuck::{Pod, Zeroable};
 use std::ffi::c_int;
@@ -45,29 +45,28 @@ pub fn get_charge_control(_fd: c_int) -> EcCmdResult<ChargeControl> {
 }
 
 pub fn set_charge_control(fd: c_int, charge_control: ChargeControl) -> EcCmdResult<()> {
-    let params = EcParamsChargeControl {
-        command: CHARGE_CONTROL_MODE_SET,
-        mode: match charge_control {
-            ChargeControl::Normal(_) => CHARGE_CONTROL_COMMAND_NORMAL,
-            ChargeControl::Idle => CHARGE_CONTROL_COMMAND_IDLE,
-            ChargeControl::Discharge => CHARGE_CONTROL_COMMAND_DISCHARGE,
-        },
-        reserved: Default::default(),
-        sustain: match charge_control {
-            ChargeControl::Normal(sustain) => sustain.unwrap_or(Sustainer {
-                min_percent: -1,
-                max_percent: -1,
-            }),
-            _ => Default::default(),
-        },
-    };
-    ec_command(
+    ec_command_bytemuck(
         CrosEcCmd::ChargeControl,
         {
             let version = ec_cmd_get_cmd_versions(fd, CrosEcCmd::ChargeControl)?;
             Ok(if version & V2 != 0 { 2 } else { 1 })
         }?,
-        bytemuck::bytes_of(&params),
+        &EcParamsChargeControl {
+            command: CHARGE_CONTROL_MODE_SET,
+            mode: match charge_control {
+                ChargeControl::Normal(_) => CHARGE_CONTROL_COMMAND_NORMAL,
+                ChargeControl::Idle => CHARGE_CONTROL_COMMAND_IDLE,
+                ChargeControl::Discharge => CHARGE_CONTROL_COMMAND_DISCHARGE,
+            },
+            reserved: Default::default(),
+            sustain: match charge_control {
+                ChargeControl::Normal(sustain) => sustain.unwrap_or(Sustainer {
+                    min_percent: -1,
+                    max_percent: -1,
+                }),
+                _ => Default::default(),
+            },
+        },
         fd,
     )?;
     Ok(())

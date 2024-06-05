@@ -10,6 +10,7 @@ pub enum CrosEcCmd {
     GetBoardVersion = 0x0006,
     ReadMemMap = 0x0007,
     GetCmdVersions = 0x0008,
+    GetProtocolInfo = 0x000B,
     GetFeatures = 0x000D,
     SetFanTargetRpm = 0x0021,
     ChargeControl = 0x0096,
@@ -18,12 +19,13 @@ pub enum CrosEcCmd {
     BatteryGetStatic = 0x0600,
 }
 
-pub mod get_chip_info;
-pub mod hello;
-pub mod version;
 pub mod board_version;
-pub mod set_fan_target_rpm;
+pub mod charge_control;
+pub mod get_chip_info;
 pub mod get_cmd_versions;
 pub mod get_features;
+pub mod get_protocol_info;
+pub mod hello;
 pub mod read_mem;
-pub mod charge_control;
+pub mod set_fan_target_rpm;
+pub mod version;

@@ -1,60 +1,76 @@
-use std::os::raw::c_int;
 use crate::commands::CrosEcCmd;
-use crate::{CROS_EC_IOC_MAGIC, EcCmdResult};
 use crate::EcError;
+use crate::{EcCmdResult, CROS_EC_IOC_MAGIC};
+use bytemuck::{bytes_of, from_bytes, AnyBitPattern, NoUninit, Pod, Zeroable};
 use nix::ioctl_readwrite;
 use num_traits::FromPrimitive;
+use std::cmp::max;
+use std::mem::size_of;
+use std::os::raw::c_int;
 
 use super::EcResponseStatus;
 
-pub const IN_SIZE: usize = 256;
-pub const BUF_SIZE: usize = IN_SIZE - 8;
-
+#[derive(Debug, Pod, Zeroable, Clone, Copy)]
 #[repr(C)]
-struct _CrosEcCommandV2 {
+struct CrosEcCommandV2 {
     version: u32,
     command: u32,
-    outsize: u32,
-    insize: u32,
+    ec_input_size: u32,
+    ec_output_size: u32,
     result: u32,
     data: [u8; 0],
 }
 
-#[repr(C)]
-struct CrosEcCommandV2 {
-    version: u32,
+ioctl_readwrite!(cros_ec_cmd, CROS_EC_IOC_MAGIC, 0, CrosEcCommandV2);
+
+pub fn ec_command_with_dynamic_output_size(
     command: CrosEcCmd,
-    outsize: u32,
-    insize: u32,
-    result: u32,
-    data: [u8; IN_SIZE],
+    command_version: u8,
+    input_buffer: &[u8],
+    output_size: usize,
+    fd: c_int,
+) -> EcCmdResult<Vec<u8>> {
+    let buffer_size = max(input_buffer.len(), output_size);
+    let cmd_without_data = CrosEcCommandV2 {
+        version: command_version as u32,
+        command: command as u32,
+        ec_input_size: input_buffer.len() as u32,
+        ec_output_size: output_size as u32,
+        result: 0xFF,
+        data: [],
+    };
+    let mut cmd_vec = bytemuck::bytes_of(&cmd_without_data).to_vec();
+    cmd_vec.extend({
+        let mut buffer = input_buffer.to_vec();
+        buffer.resize(buffer_size, Default::default());
+        buffer
+    });
+    let result = unsafe { cros_ec_cmd(fd, cmd_vec.as_mut_ptr() as *mut _ as *mut CrosEcCommandV2) };
+    let _output_size = result.map_err(|err| EcError::DeviceError(err))?;
+    let cmd_without_data =
+        bytemuck::from_bytes::<CrosEcCommandV2>(&cmd_vec[..size_of::<CrosEcCommandV2>()]);
+    let status = FromPrimitive::from_u32(cmd_without_data.result)
+        .ok_or(EcError::UnknownResponseCode(cmd_without_data.result))?;
+    match status {
+        EcResponseStatus::Success => Ok(cmd_vec
+            [size_of::<CrosEcCommandV2>()..size_of::<CrosEcCommandV2>() + output_size]
+            .to_vec()),
+        status => Err(EcError::Response(status)),
+    }
 }
 
-ioctl_readwrite!(cros_ec_cmd, CROS_EC_IOC_MAGIC, 0, _CrosEcCommandV2);
-
-pub fn ec_command(command: CrosEcCmd, command_version: u8, data: &[u8], fd: c_int) -> EcCmdResult<Vec<u8>> {
-
-    let size = std::cmp::min(IN_SIZE, data.len());
-
-    let mut cmd = CrosEcCommandV2 {
-        version: command_version as u32,
+pub fn ec_command_bytemuck<Request: NoUninit, Response: AnyBitPattern>(
+    command: CrosEcCmd,
+    command_version: u8,
+    input: &Request,
+    fd: c_int,
+) -> EcCmdResult<Response> {
+    let response = ec_command_with_dynamic_output_size(
         command,
-        outsize: size as u32,
-        insize: IN_SIZE as u32,
-        result: 0xFF,
-        data: [0; IN_SIZE],
-    };
-
-    cmd.data[0..size].copy_from_slice(data);
-    let cmd_ptr = &mut cmd as *mut _ as *mut _CrosEcCommandV2;
-
-    let result = unsafe { cros_ec_cmd(fd, cmd_ptr) };
-    let status =
-        FromPrimitive::from_u32(cmd.result).ok_or(EcError::UnknownResponseCode(cmd.result))?;
-    let EcResponseStatus::Success = status else {
-        return Err(EcError::Response(status));
-    };
-    result
-        .map(|result| cmd.data[0..result as usize].to_vec())
-        .map_err(|err| EcError::DeviceError(err))
+        command_version,
+        bytes_of(input),
+        size_of::<Response>(),
+        fd,
+    )?;
+    Ok(from_bytes::<Response>(&response).to_owned())
 }

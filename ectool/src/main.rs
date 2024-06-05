@@ -1,8 +1,9 @@
 use std::fs::File;
 use std::os::fd::AsRawFd;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
+use crosec::commands::get_protocol_info::get_protocol_info;
 use num_traits::cast::FromPrimitive;
 
 use crosec::battery::battery;
@@ -21,7 +22,8 @@ use crosec::console::console;
 use crosec::get_number_of_fans::{get_number_of_fans, Error};
 use crosec::read_mem_any::read_mem_any;
 use crosec::{
-    EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN,
+    CROS_EC_PATH, CROS_FP_PATH, EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT,
+    EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN,
 };
 
 #[derive(Parser)]
@@ -30,10 +32,29 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(Clone, Copy, ValueEnum, Default)]
+enum Device {
+    #[default]
+    Ec,
+    Fp,
+}
+
+impl Device {
+    pub fn get_path(&self) -> &'static str {
+        match self {
+            Self::Ec => CROS_EC_PATH,
+            Self::Fp => CROS_FP_PATH,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Checks for basic communication with EC
-    Hello,
+    Hello {
+        #[arg()]
+        device: Option<Device>,
+    },
     /// Prints EC version
     Version,
     /// Prints chip info
@@ -55,7 +76,10 @@ enum Commands {
     /// Get the speed of fans, in RPM
     GetFanRpm,
     /// Prints the last output to the EC debug console
-    Console,
+    Console {
+        #[arg()]
+        device: Option<Device>,
+    },
     /// Prints battery info
     Battery,
     ChargeControl {
@@ -83,11 +107,11 @@ fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli = Cli::parse();
-    let file = File::open("/dev/cros_ec").unwrap();
-    let fd = file.as_raw_fd();
 
     match cli.command {
-        Commands::Hello => {
+        Commands::Hello { device } => {
+            let file = File::open(device.unwrap_or_default().get_path()).unwrap();
+            let fd = file.as_raw_fd();
             let status = ec_cmd_hello(fd)?;
             if status {
                 println!("EC says hello!");
@@ -96,7 +120,11 @@ fn main() -> Result<()> {
             }
         }
         Commands::Version => {
-            let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) = ec_cmd_version(fd)?;
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
+            let max_sizes = get_protocol_info(fd)?;
+            let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) =
+                ec_cmd_version(fd, &max_sizes)?;
             println!("RO version:    {ro_ver}");
             println!("RW version:    {rw_ver}");
             println!("Firmware copy: {firmware_copy}");
@@ -104,6 +132,8 @@ fn main() -> Result<()> {
             println!("Tool version:  {tool_version}");
         }
         Commands::ChipInfo => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let (vendor, name, revision) = ec_cmd_get_chip_info(fd)?;
             println!("Chip info:");
             println!("  vendor:    {vendor}");
@@ -111,11 +141,15 @@ fn main() -> Result<()> {
             println!("  revision:  {revision}");
         }
         Commands::BoardVersion => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let board_version = ec_cmd_board_version(fd)?;
             println!("Board version: {board_version}");
         }
         Commands::CmdVersions { command } => match CrosEcCmd::from_u32(command) {
             Some(cmd) => {
+                let file = File::open("/dev/cros_ec").unwrap();
+                let fd = file.as_raw_fd();
                 let versions = ec_cmd_get_cmd_versions(fd, cmd)?;
                 println!("Versions: {versions:#b}");
             }
@@ -124,6 +158,8 @@ fn main() -> Result<()> {
             }
         },
         Commands::SetFanTargetRpm { rpm, index } => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             ec_cmd_set_fan_target_rpm(fd, rpm, index)?;
             match index {
                 Some(index) => {
@@ -135,14 +171,20 @@ fn main() -> Result<()> {
             }
         }
         Commands::GetFeatures => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let features = ec_cmd_get_features(fd)?;
             println!("EC supported features: {features:#b}");
         }
         Commands::GetNumberOfFans => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let number_of_fans = get_number_of_fans(fd).unwrap();
             println!("Number of fans: {number_of_fans}");
         }
         Commands::GetFanRpm => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let features = ec_cmd_get_features(fd).map_err(|e| Error::GetFeatures(e))?;
             if features & EC_FEATURE_PWM_FAN != 0 {
                 read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN)
@@ -162,55 +204,64 @@ fn main() -> Result<()> {
                 println!("No fans");
             };
         }
-        Commands::Console => {
-            let console = console(fd)?;
+        Commands::Console { device } => {
+            let file = File::open(device.unwrap_or_default().get_path()).unwrap();
+            let fd = file.as_raw_fd();
+            let max_sizes = get_protocol_info(fd)?;
+            let console = console(fd, &max_sizes)?;
             let console = console.trim();
             println!("{console}");
         }
         Commands::Battery => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
             let battery_info = battery(fd)?;
             println!("{battery_info:#?}");
         }
-        Commands::ChargeControl { command } => match command {
-            None => {
-                if supports_get_and_sustainer(fd)? {
-                    let charge_control = get_charge_control(fd)?;
-                    println!("{charge_control:#?}");
-                } else {
-                    println!("This EC doesn't support getting charge control");
-                }
-            }
-            Some(command) => match command {
-                ChargeControlSubcommands::Normal {
-                    min_percent,
-                    max_percent,
-                } => match min_percent {
-                    Some(min_percent) => {
-                        let max_percent = max_percent.unwrap_or(min_percent);
-                        set_charge_control(
-                            fd,
-                            charge_control::ChargeControl::Normal(Some(Sustainer {
-                                min_percent: min_percent as i8,
-                                max_percent: max_percent as i8,
-                            })),
-                        )?;
-                        println!("Set charge control to normal with sustainer from {min_percent}% to {max_percent}%");
+        Commands::ChargeControl { command } => {
+            let file = File::open("/dev/cros_ec").unwrap();
+            let fd = file.as_raw_fd();
+            match command {
+                None => {
+                    if supports_get_and_sustainer(fd)? {
+                        let charge_control = get_charge_control(fd)?;
+                        println!("{charge_control:#?}");
+                    } else {
+                        println!("This EC doesn't support getting charge control");
                     }
-                    None => {
-                        set_charge_control(fd, charge_control::ChargeControl::Normal(None))?;
-                        println!("Set charge control to normal");
+                }
+                Some(command) => match command {
+                    ChargeControlSubcommands::Normal {
+                        min_percent,
+                        max_percent,
+                    } => match min_percent {
+                        Some(min_percent) => {
+                            let max_percent = max_percent.unwrap_or(min_percent);
+                            set_charge_control(
+                                fd,
+                                charge_control::ChargeControl::Normal(Some(Sustainer {
+                                    min_percent: min_percent as i8,
+                                    max_percent: max_percent as i8,
+                                })),
+                            )?;
+                            println!("Set charge control to normal with sustainer from {min_percent}% to {max_percent}%");
+                        }
+                        None => {
+                            set_charge_control(fd, charge_control::ChargeControl::Normal(None))?;
+                            println!("Set charge control to normal");
+                        }
+                    },
+                    ChargeControlSubcommands::Idle => {
+                        println!("Set charge control to idle");
+                        set_charge_control(fd, charge_control::ChargeControl::Idle)?;
+                    }
+                    ChargeControlSubcommands::Discharge => {
+                        println!("Set charge control to discharge");
+                        set_charge_control(fd, charge_control::ChargeControl::Discharge)?;
                     }
                 },
-                ChargeControlSubcommands::Idle => {
-                    println!("Set charge control to idle");
-                    set_charge_control(fd, charge_control::ChargeControl::Idle)?;
-                }
-                ChargeControlSubcommands::Discharge => {
-                    println!("Set charge control to discharge");
-                    set_charge_control(fd, charge_control::ChargeControl::Discharge)?;
-                }
-            },
-        },
+            }
+        }
     }
 
     Ok(())

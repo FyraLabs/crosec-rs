@@ -1,9 +1,16 @@
-use std::ffi::c_int;
-use crate::commands::CrosEcCmd;
 use crate::commands::get_cmd_versions::{ec_cmd_get_cmd_versions, V1};
-use crate::{EC_MEM_MAP_BATTERY_CAPACITY, EC_MEM_MAP_BATTERY_CYCLE_COUNT, EC_MEM_MAP_BATTERY_DESIGN_CAPACITY, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE, EC_MEM_MAP_BATTERY_FLAGS, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY, EC_MEM_MAP_BATTERY_MANUFACTURER, EC_MEM_MAP_BATTERY_MODEL, EC_MEM_MAP_BATTERY_RATE, EC_MEM_MAP_BATTERY_SERIAL, EC_MEM_MAP_BATTERY_TYPE, EC_MEM_MAP_BATTERY_VERSION, EC_MEM_MAP_BATTERY_VOLTAGE, EcCmdResult};
+use crate::commands::CrosEcCmd;
 use crate::read_mem_any::read_mem_any;
 use crate::read_mem_string::read_mem_string;
+use crate::{
+    EcCmdResult, EC_MEM_MAP_BATTERY_CAPACITY, EC_MEM_MAP_BATTERY_CYCLE_COUNT,
+    EC_MEM_MAP_BATTERY_DESIGN_CAPACITY, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE,
+    EC_MEM_MAP_BATTERY_FLAGS, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY,
+    EC_MEM_MAP_BATTERY_MANUFACTURER, EC_MEM_MAP_BATTERY_MODEL, EC_MEM_MAP_BATTERY_RATE,
+    EC_MEM_MAP_BATTERY_SERIAL, EC_MEM_MAP_BATTERY_TYPE, EC_MEM_MAP_BATTERY_VERSION,
+    EC_MEM_MAP_BATTERY_VOLTAGE,
+};
+use std::ffi::c_int;
 
 #[derive(Debug, Clone)]
 pub struct BatteryInfo {
@@ -23,7 +30,10 @@ pub struct BatteryInfo {
 
 pub fn battery(fd: c_int) -> EcCmdResult<BatteryInfo> {
     if ec_cmd_get_cmd_versions(fd, CrosEcCmd::BatteryGetStatic)? & V1 != 0 {
-        panic!("Battery info needs to be gotten with the {:?} command", CrosEcCmd::BatteryGetStatic);
+        panic!(
+            "Battery info needs to be gotten with the {:?} command",
+            CrosEcCmd::BatteryGetStatic
+        );
     } else {
         let battery_version = read_mem_any::<i8>(fd, EC_MEM_MAP_BATTERY_VERSION).unwrap();
         if battery_version < 1 {
@@ -35,8 +45,10 @@ pub fn battery(fd: c_int) -> EcCmdResult<BatteryInfo> {
         let chemistry = read_mem_string(fd, EC_MEM_MAP_BATTERY_TYPE).unwrap();
         let serial_number = read_mem_string(fd, EC_MEM_MAP_BATTERY_SERIAL).unwrap();
         let design_capacity = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_DESIGN_CAPACITY).unwrap();
-        let last_full_charge = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY).unwrap();
-        let design_output_voltage = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE).unwrap();
+        let last_full_charge =
+            read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY).unwrap();
+        let design_output_voltage =
+            read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE).unwrap();
         let cycle_count = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_CYCLE_COUNT).unwrap();
         let present_voltage = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_VOLTAGE).unwrap();
         let present_current = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_RATE).unwrap();
@@ -53,7 +65,7 @@ pub fn battery(fd: c_int) -> EcCmdResult<BatteryInfo> {
             cycle_count,
             present_voltage,
             present_current,
-            remaining_capacity
+            remaining_capacity,
         })
     }
 }

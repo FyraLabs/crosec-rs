@@ -1,8 +1,8 @@
 use bytemuck::{NoUninit, Pod, Zeroable};
 use nix::libc::c_int;
 
+use crate::ec_command::ec_command_bytemuck;
 use crate::{commands::CrosEcCmd, EcCmdResult};
-use crate::ec_command::ec_command;
 
 const INPUT_DATA: u32 = 0xa0b0c0d0;
 const EXPECTED_OUTPUT: u32 = 0xa1b2c3d4;
@@ -20,14 +20,13 @@ struct EcResponseHello {
 }
 
 pub fn ec_cmd_hello(fd: c_int) -> EcCmdResult<bool> {
-    let params = EcParamsHello {
-        in_data: INPUT_DATA,
-    };
-    let params_slice = bytemuck::bytes_of(&params);
-
-    let result = ec_command(CrosEcCmd::Hello, 0, params_slice, fd)?;
-    Ok(bytemuck::try_from_bytes::<EcResponseHello>(&result).map_or(
-        false,
-        |response| response.out_data == EXPECTED_OUTPUT)
-    )
+    let response = ec_command_bytemuck::<_, EcResponseHello>(
+        CrosEcCmd::Hello,
+        0,
+        &EcParamsHello {
+            in_data: INPUT_DATA,
+        },
+        fd,
+    )?;
+    Ok(response.out_data == EXPECTED_OUTPUT)
 }
