@@ -11,6 +11,7 @@ use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use crosec::wait_event::{event::EcMkbpEventType, wait_event};
 use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
+use fp_upload_template_command::fp_upload_template_command;
 use num_traits::cast::FromPrimitive;
 
 use crosec::battery::battery;
@@ -31,6 +32,7 @@ use crosec::{
 
 mod charge_control_subcommand;
 mod fp_download_subcommand;
+mod fp_upload_template_command;
 
 #[derive(Parser)]
 struct Cli {
@@ -112,6 +114,8 @@ enum Commands {
         #[command(subcommand)]
         command: FpDownloadSubcommand,
     },
+    /// Uploads template from stdin
+    FpUploadTemplate,
 }
 
 fn main() -> Result<()> {
@@ -270,6 +274,7 @@ fn main() -> Result<()> {
             println!("{result:#?}");
         }
         Commands::FpDownload { command } => fp_download_subcommand(command)?,
+        Commands::FpUploadTemplate => fp_upload_template_command()?,
     }
 
     Ok(())

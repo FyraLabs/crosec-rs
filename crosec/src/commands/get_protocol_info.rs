@@ -4,7 +4,7 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::{commands::CrosEcCmd, ec_command::ec_command_bytemuck, EcCmdResult};
 
-#[derive(Pod, Zeroable, Clone, Copy)]
+#[derive(Pod, Zeroable, Clone, Copy, Debug)]
 #[repr(C)]
 pub struct EcResponseGetProtocolInfo {
     protocol_versions: u32,

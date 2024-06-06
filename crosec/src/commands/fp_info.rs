@@ -16,16 +16,23 @@ pub struct EcResponseFpInfo {
     pub product_id: u32,
     pub model_id: u32,
     pub version: u32,
+    /// The size of the PGM image, in bytes
     pub frame_size: u32,
     pub pixel_format: u32,
     pub width: u16,
     pub height: u16,
     pub bpp: u16,
     pub errors: u16,
+    /// The template size, in bytes
     pub template_size: u32,
+    /// The maximum number of templates the FP can store and match at once
     pub template_max: u16,
+    /// The number of templates loaded into the FP
     pub template_valid: u16,
+    /// The first bit (the rightmost) represents template 0, the 2nd bit form the right represents template 1, etc.
+    /// If the bit is 1, that means that the template has been updated by the FP and the updated version has not been downloaded yet.
     pub template_dirty: u32,
+    /// This version could increase after an update to the FP firmware
     pub template_version: u32,
 }
 impl EcResponseFpInfo {

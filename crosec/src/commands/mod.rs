@@ -32,6 +32,7 @@ pub mod fp_info;
 pub mod fp_mode;
 pub mod fp_set_seed;
 pub mod fp_stats;
+pub mod fp_upload_template;
 pub mod get_chip_info;
 pub mod get_cmd_versions;
 pub mod get_features;

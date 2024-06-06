@@ -41,7 +41,7 @@ pub fn fp_download(
         DownloadType::SimpleImage => (fp_info.get_simple_image_size(), FP_FRAME_INDEX_RAW_IMAGE),
         DownloadType::RawImage => (fp_info.frame_size as usize, FP_FRAME_INDEX_RAW_IMAGE),
         DownloadType::Template(template_index) => {
-            (fp_info.template_size as usize, *template_index as u32)
+            (fp_info.template_size as usize, *template_index as u32 + 1)
         }
     };
     // The template may be (and probably is) bigger than the max output size, so we need to download it in chunks
@@ -81,18 +81,23 @@ pub fn fp_download(
 
 /// A safe wrapper around the actual template so you don't try to upload arbitrary data
 pub struct FpTemplate {
-    buffer: Vec<u8>,
+    vec: Vec<u8>,
 }
 
 impl Into<Vec<u8>> for FpTemplate {
     fn into(self) -> Vec<u8> {
-        self.buffer
+        self.vec
     }
 }
 
 impl FpTemplate {
     pub fn buffer(&self) -> &Vec<u8> {
-        &self.buffer
+        &self.vec
+    }
+
+    /// Make sure your buffer is actually a compatible fp template
+    pub unsafe fn from_vec_unchecked(vec: Vec<u8>) -> Self {
+        FpTemplate { vec }
     }
 }
 
@@ -103,6 +108,6 @@ pub fn fp_download_template(
     index: usize,
 ) -> FpTemplate {
     FpTemplate {
-        buffer: fp_download(file, fp_info, protocol_info, &DownloadType::Template(index)),
+        vec: fp_download(file, fp_info, protocol_info, &DownloadType::Template(index)),
     }
 }
