@@ -1,4 +1,4 @@
-use std::ffi::c_int;
+use std::{fs::File, os::fd::AsRawFd};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -17,7 +17,7 @@ struct EcParamsFpSeed {
     pub seed: [u8; FP_CONTEXT_TPM_BYTES],
 }
 
-pub fn fp_set_seed(fd: c_int, seed: [u8; FP_CONTEXT_TPM_BYTES]) -> EcCmdResult<()> {
+pub fn fp_set_seed(file: &mut File, seed: [u8; FP_CONTEXT_TPM_BYTES]) -> EcCmdResult<()> {
     ec_command_bytemuck(
         CrosEcCmd::FpSetSeed,
         0,
@@ -26,6 +26,6 @@ pub fn fp_set_seed(fd: c_int, seed: [u8; FP_CONTEXT_TPM_BYTES]) -> EcCmdResult<(
             reserved: Default::default(),
             seed,
         },
-        fd,
+        file.as_raw_fd(),
     )
 }

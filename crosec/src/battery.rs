@@ -10,7 +10,7 @@ use crate::{
     EC_MEM_MAP_BATTERY_SERIAL, EC_MEM_MAP_BATTERY_TYPE, EC_MEM_MAP_BATTERY_VERSION,
     EC_MEM_MAP_BATTERY_VOLTAGE,
 };
-use std::ffi::c_int;
+use std::fs::File;
 
 #[derive(Debug, Clone)]
 pub struct BatteryInfo {
@@ -28,31 +28,32 @@ pub struct BatteryInfo {
     pub flags: u8,
 }
 
-pub fn battery(fd: c_int) -> EcCmdResult<BatteryInfo> {
-    if ec_cmd_get_cmd_versions(fd, CrosEcCmd::BatteryGetStatic)? & V1 != 0 {
+pub fn battery(file: &mut File) -> EcCmdResult<BatteryInfo> {
+    if ec_cmd_get_cmd_versions(file, CrosEcCmd::BatteryGetStatic)? & V1 != 0 {
         panic!(
             "Battery info needs to be gotten with the {:?} command",
             CrosEcCmd::BatteryGetStatic
         );
     } else {
-        let battery_version = read_mem_any::<i8>(fd, EC_MEM_MAP_BATTERY_VERSION).unwrap();
+        let battery_version = read_mem_any::<i8>(file, EC_MEM_MAP_BATTERY_VERSION).unwrap();
         if battery_version < 1 {
             panic!("Battery version {battery_version} is not supported");
         }
-        let flags = read_mem_any::<u8>(fd, EC_MEM_MAP_BATTERY_FLAGS).unwrap();
-        let oem_name = read_mem_string(fd, EC_MEM_MAP_BATTERY_MANUFACTURER).unwrap();
-        let model_number = read_mem_string(fd, EC_MEM_MAP_BATTERY_MODEL).unwrap();
-        let chemistry = read_mem_string(fd, EC_MEM_MAP_BATTERY_TYPE).unwrap();
-        let serial_number = read_mem_string(fd, EC_MEM_MAP_BATTERY_SERIAL).unwrap();
-        let design_capacity = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_DESIGN_CAPACITY).unwrap();
+        let flags = read_mem_any::<u8>(file, EC_MEM_MAP_BATTERY_FLAGS).unwrap();
+        let oem_name = read_mem_string(file, EC_MEM_MAP_BATTERY_MANUFACTURER).unwrap();
+        let model_number = read_mem_string(file, EC_MEM_MAP_BATTERY_MODEL).unwrap();
+        let chemistry = read_mem_string(file, EC_MEM_MAP_BATTERY_TYPE).unwrap();
+        let serial_number = read_mem_string(file, EC_MEM_MAP_BATTERY_SERIAL).unwrap();
+        let design_capacity =
+            read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_DESIGN_CAPACITY).unwrap();
         let last_full_charge =
-            read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY).unwrap();
+            read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_LAST_FULL_CHARGE_CAPACITY).unwrap();
         let design_output_voltage =
-            read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE).unwrap();
-        let cycle_count = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_CYCLE_COUNT).unwrap();
-        let present_voltage = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_VOLTAGE).unwrap();
-        let present_current = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_RATE).unwrap();
-        let remaining_capacity = read_mem_any::<i32>(fd, EC_MEM_MAP_BATTERY_CAPACITY).unwrap();
+            read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_DESIGN_VOLTAGE).unwrap();
+        let cycle_count = read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_CYCLE_COUNT).unwrap();
+        let present_voltage = read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_VOLTAGE).unwrap();
+        let present_current = read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_RATE).unwrap();
+        let remaining_capacity = read_mem_any::<i32>(file, EC_MEM_MAP_BATTERY_CAPACITY).unwrap();
         Ok(BatteryInfo {
             flags,
             oem_name,

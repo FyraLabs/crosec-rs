@@ -3,6 +3,7 @@ use crate::read_mem_any::read_mem_any;
 use crate::{EcError, EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT, EC_MEM_MAP_FAN};
 use std::ffi::c_int;
 use std::fmt::{Debug, Display, Formatter};
+use std::fs::File;
 
 #[derive(Debug)]
 pub enum Error {
@@ -25,10 +26,10 @@ impl Display for Error {
     }
 }
 
-pub fn get_number_of_fans(fd: c_int) -> Result<usize, Error> {
-    let features = ec_cmd_get_features(fd).map_err(|e| Error::GetFeatures(e))?;
+pub fn get_number_of_fans(file: &mut File) -> Result<usize, Error> {
+    let features = ec_cmd_get_features(file).map_err(|e| Error::GetFeatures(e))?;
     let number_of_fans = if features & EC_FEATURE_PWM_FAN != 0 {
-        read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN)
+        read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(file, EC_MEM_MAP_FAN)
             .map_err(|e| Error::ReadMem(e))?
             .into_iter()
             .filter(|data| *data != EC_FAN_SPEED_NOT_PRESENT)

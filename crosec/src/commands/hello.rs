@@ -1,5 +1,7 @@
+use std::fs::File;
+use std::os::fd::AsRawFd;
+
 use bytemuck::{NoUninit, Pod, Zeroable};
-use nix::libc::c_int;
 
 use crate::ec_command::ec_command_bytemuck;
 use crate::{commands::CrosEcCmd, EcCmdResult};
@@ -19,14 +21,14 @@ struct EcResponseHello {
     out_data: u32,
 }
 
-pub fn ec_cmd_hello(fd: c_int) -> EcCmdResult<bool> {
+pub fn ec_cmd_hello(file: &mut File) -> EcCmdResult<bool> {
     let response = ec_command_bytemuck::<_, EcResponseHello>(
         CrosEcCmd::Hello,
         0,
         &EcParamsHello {
             in_data: INPUT_DATA,
         },
-        fd,
+        file.as_raw_fd(),
     )?;
     Ok(response.out_data == EXPECTED_OUTPUT)
 }

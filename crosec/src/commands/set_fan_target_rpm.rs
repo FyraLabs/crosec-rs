@@ -1,5 +1,6 @@
-use std::ffi::c_int;
+use std::fs::File;
 use std::mem::size_of;
+use std::os::fd::AsRawFd;
 
 use bytemuck::{Pod, Zeroable};
 
@@ -30,7 +31,11 @@ impl EcParamsSetFanTargetRpmV1 {
     }
 }
 
-pub fn ec_cmd_set_fan_target_rpm(fd: c_int, rpm: u32, fan_index: Option<u8>) -> EcCmdResult<()> {
+pub fn ec_cmd_set_fan_target_rpm(
+    file: &mut File,
+    rpm: u32,
+    fan_index: Option<u8>,
+) -> EcCmdResult<()> {
     // v0 can only set the RPM for all fans
     // v1 can set the RPM for a specific fan
     match fan_index {
@@ -43,7 +48,7 @@ pub fn ec_cmd_set_fan_target_rpm(fd: c_int, rpm: u32, fan_index: Option<u8>) -> 
                     fan_index: index,
                 }
                 .to_le_bytes(),
-                fd,
+                file.as_raw_fd(),
             )?;
         }
         None => {
@@ -51,7 +56,7 @@ pub fn ec_cmd_set_fan_target_rpm(fd: c_int, rpm: u32, fan_index: Option<u8>) -> 
                 CrosEcCmd::SetFanTargetRpm,
                 0,
                 &EcParamsSetFanTargetRpmV0 { rpm },
-                fd,
+                file.as_raw_fd(),
             )?;
         }
     };

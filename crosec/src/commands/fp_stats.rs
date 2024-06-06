@@ -1,4 +1,4 @@
-use std::ffi::c_int;
+use std::{fs::File, os::fd::AsRawFd};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -24,6 +24,6 @@ pub struct OverallT0 {
     pub hi: u32,
 }
 
-pub fn fp_stats(fd: c_int) -> EcCmdResult<EcResponseFpStats> {
-    ec_command_bytemuck(CrosEcCmd::FpStats, 0, &(), fd)
+pub fn fp_stats(file: &mut File) -> EcCmdResult<EcResponseFpStats> {
+    ec_command_bytemuck(CrosEcCmd::FpStats, 0, &(), file.as_raw_fd())
 }

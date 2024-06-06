@@ -1,5 +1,6 @@
+use std::{fs::File, os::fd::AsRawFd};
+
 use bytemuck::{Pod, Zeroable};
-use nix::libc::c_int;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -33,7 +34,7 @@ enum EcImage {
 }
 
 pub fn ec_cmd_version(
-    fd: c_int,
+    file: &mut File,
     protocol_info: &EcResponseGetProtocolInfo,
 ) -> EcCmdResult<(String, String, String, String, String)> {
     let params = EcResponseVersionV1 {
@@ -44,7 +45,8 @@ pub fn ec_cmd_version(
         cros_fwid_rw: [0; 32],
     };
 
-    let response: EcResponseVersionV1 = ec_command_bytemuck(CrosEcCmd::Version, 0, &params, fd)?;
+    let response: EcResponseVersionV1 =
+        ec_command_bytemuck(CrosEcCmd::Version, 0, &params, file.as_raw_fd())?;
 
     let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or_default();
     let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or_default();
@@ -63,7 +65,7 @@ pub fn ec_cmd_version(
         0,
         &[0; 248],
         protocol_info.max_ec_output_size(),
-        fd,
+        file.as_raw_fd(),
     )?;
 
     let build_info = String::from_utf8(result).unwrap_or(String::from(""));

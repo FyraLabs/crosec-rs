@@ -1,4 +1,4 @@
-use std::ffi::c_int;
+use std::{fs::File, os::fd::AsRawFd};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -29,8 +29,9 @@ pub struct EcResponseFpInfo {
     pub template_version: u32,
 }
 
-pub fn fp_info(fd: c_int) -> EcCmdResult<EcResponseFpInfo> {
-    let versions = ec_cmd_get_cmd_versions(fd, CrosEcCmd::FpInfo)?;
+pub fn fp_info(file: &mut File) -> EcCmdResult<EcResponseFpInfo> {
+    let fd = file.as_raw_fd();
+    let versions = ec_cmd_get_cmd_versions(file, CrosEcCmd::FpInfo)?;
     if versions & V1 == 0 {
         panic!("fp doesn't support V1. Other versions are currently not implemented");
     }

@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::os::fd::AsRawFd;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -132,9 +131,8 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Hello { device } => {
-            let file = File::open(device.unwrap_or_default().get_path()).unwrap();
-            let fd = file.as_raw_fd();
-            let status = ec_cmd_hello(fd)?;
+            let mut file = File::open(device.unwrap_or_default().get_path())?;
+            let status = ec_cmd_hello(&mut file)?;
             if status {
                 println!("EC says hello!");
             } else {
@@ -142,11 +140,10 @@ fn main() -> Result<()> {
             }
         }
         Commands::Version => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let max_sizes = get_protocol_info(fd)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let max_sizes = get_protocol_info(&mut file)?;
             let (ro_ver, rw_ver, firmware_copy, build_info, tool_version) =
-                ec_cmd_version(fd, &max_sizes)?;
+                ec_cmd_version(&mut file, &max_sizes)?;
             println!("RO version:    {ro_ver}");
             println!("RW version:    {rw_ver}");
             println!("Firmware copy: {firmware_copy}");
@@ -154,25 +151,22 @@ fn main() -> Result<()> {
             println!("Tool version:  {tool_version}");
         }
         Commands::ChipInfo => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let (vendor, name, revision) = ec_cmd_get_chip_info(fd)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let (vendor, name, revision) = ec_cmd_get_chip_info(&mut file)?;
             println!("Chip info:");
             println!("  vendor:    {vendor}");
             println!("  name:      {name}");
             println!("  revision:  {revision}");
         }
         Commands::BoardVersion => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let board_version = ec_cmd_board_version(fd)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let board_version = ec_cmd_board_version(&mut file)?;
             println!("Board version: {board_version}");
         }
         Commands::CmdVersions { command } => match CrosEcCmd::from_u32(command) {
             Some(cmd) => {
-                let file = File::open("/dev/cros_ec").unwrap();
-                let fd = file.as_raw_fd();
-                let versions = ec_cmd_get_cmd_versions(fd, cmd)?;
+                let mut file = File::open(CROS_EC_PATH)?;
+                let versions = ec_cmd_get_cmd_versions(&mut file, cmd)?;
                 println!("Versions: {versions:#b}");
             }
             None => {
@@ -180,9 +174,8 @@ fn main() -> Result<()> {
             }
         },
         Commands::SetFanTargetRpm { rpm, index } => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            ec_cmd_set_fan_target_rpm(fd, rpm, index)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            ec_cmd_set_fan_target_rpm(&mut file, rpm, index)?;
             match index {
                 Some(index) => {
                     println!("Set RPM to {rpm} for fan {index}");
@@ -193,23 +186,20 @@ fn main() -> Result<()> {
             }
         }
         Commands::GetFeatures => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let features = ec_cmd_get_features(fd)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let features = ec_cmd_get_features(&mut file)?;
             println!("EC supported features: {features:#b}");
         }
         Commands::GetNumberOfFans => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let number_of_fans = get_number_of_fans(fd).unwrap();
+            let mut file = File::open(CROS_EC_PATH)?;
+            let number_of_fans = get_number_of_fans(&mut file).unwrap();
             println!("Number of fans: {number_of_fans}");
         }
         Commands::GetFanRpm => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let features = ec_cmd_get_features(fd).map_err(|e| Error::GetFeatures(e))?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let features = ec_cmd_get_features(&mut file).map_err(|e| Error::GetFeatures(e))?;
             if features & EC_FEATURE_PWM_FAN != 0 {
-                read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(fd, EC_MEM_MAP_FAN)
+                read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(&mut file, EC_MEM_MAP_FAN)
                     .map_err(|e| Error::ReadMem(e))?
                     .into_iter()
                     .enumerate()
@@ -227,26 +217,23 @@ fn main() -> Result<()> {
             };
         }
         Commands::Console { device } => {
-            let file = File::open(device.unwrap_or_default().get_path()).unwrap();
-            let fd = file.as_raw_fd();
-            let max_sizes = get_protocol_info(fd)?;
-            let console = console(fd, &max_sizes)?;
+            let mut file = File::open(device.unwrap_or_default().get_path())?;
+            let max_sizes = get_protocol_info(&mut file)?;
+            let console = console(&mut file, &max_sizes)?;
             let console = console.trim();
             println!("{console}");
         }
         Commands::Battery => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
-            let battery_info = battery(fd)?;
+            let mut file = File::open(CROS_EC_PATH)?;
+            let battery_info = battery(&mut file)?;
             println!("{battery_info:#?}");
         }
         Commands::ChargeControl { command } => {
-            let file = File::open("/dev/cros_ec").unwrap();
-            let fd = file.as_raw_fd();
+            let mut file = File::open(CROS_EC_PATH)?;
             match command {
                 None => {
-                    if supports_get_and_sustainer(fd)? {
-                        let charge_control = get_charge_control(fd)?;
+                    if supports_get_and_sustainer(&mut file)? {
+                        let charge_control = get_charge_control(&mut file)?;
                         println!("{charge_control:#?}");
                     } else {
                         println!("This EC doesn't support getting charge control");
@@ -260,7 +247,7 @@ fn main() -> Result<()> {
                         Some(min_percent) => {
                             let max_percent = max_percent.unwrap_or(min_percent);
                             set_charge_control(
-                                fd,
+                                &mut file,
                                 charge_control::ChargeControl::Normal(Some(Sustainer {
                                     min_percent: min_percent as i8,
                                     max_percent: max_percent as i8,
@@ -269,31 +256,32 @@ fn main() -> Result<()> {
                             println!("Set charge control to normal with sustainer from {min_percent}% to {max_percent}%");
                         }
                         None => {
-                            set_charge_control(fd, charge_control::ChargeControl::Normal(None))?;
+                            set_charge_control(
+                                &mut file,
+                                charge_control::ChargeControl::Normal(None),
+                            )?;
                             println!("Set charge control to normal");
                         }
                     },
                     ChargeControlSubcommands::Idle => {
                         println!("Set charge control to idle");
-                        set_charge_control(fd, charge_control::ChargeControl::Idle)?;
+                        set_charge_control(&mut file, charge_control::ChargeControl::Idle)?;
                     }
                     ChargeControlSubcommands::Discharge => {
                         println!("Set charge control to discharge");
-                        set_charge_control(fd, charge_control::ChargeControl::Discharge)?;
+                        set_charge_control(&mut file, charge_control::ChargeControl::Discharge)?;
                     }
                 },
             }
         }
         Commands::FpInfo => {
-            let file = File::open(CROS_FP_PATH).unwrap();
-            let fd = file.as_raw_fd();
-            let info = fp_info(fd)?;
+            let mut file = File::open(CROS_FP_PATH)?;
+            let info = fp_info(&mut file)?;
             println!("{info:#?}");
         }
         Commands::FpStats => {
-            let file = File::open(CROS_FP_PATH).unwrap();
-            let fd = file.as_raw_fd();
-            let stats = fp_stats(fd)?;
+            let mut file = File::open(CROS_FP_PATH)?;
+            let stats = fp_stats(&mut file)?;
             println!("{stats:#?}");
         }
         Commands::FpSetSeed { seed } => {
@@ -301,9 +289,8 @@ fn main() -> Result<()> {
                 seed.as_bytes().to_owned(),
             ) {
                 Ok(seed) => {
-                    let file = File::open(CROS_FP_PATH).unwrap();
-                    let fd = file.as_raw_fd();
-                    fp_set_seed(fd, seed)?;
+                    let mut file = File::open(CROS_FP_PATH)?;
+                    fp_set_seed(&mut file, seed)?;
                     println!("Set fp seed");
                 }
                 Err(seed) => {
@@ -322,9 +309,8 @@ fn main() -> Result<()> {
             } else {
                 FpMode::DontChange as u32
             };
-            let file = File::open(CROS_FP_PATH).unwrap();
-            let fd = file.as_raw_fd();
-            let mode = fp_mode(fd, mode)?;
+            let mut file = File::open(CROS_FP_PATH)?;
+            let mode = fp_mode(&mut file, mode)?;
             let display = FpMode::display(mode);
             println!("FP mode: {display}");
         }
