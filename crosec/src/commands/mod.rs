@@ -18,6 +18,8 @@ pub enum CrosEcCmd {
     ConsoleRead = 0x0098,
     FpMode = 0x0402,
     FpInfo = 0x0403,
+    FpFrame = 0x0404,
+    FpTemplate = 0x0405,
     FpStats = 0x0407,
     FpSetSeed = 0x0408,
     BatteryGetStatic = 0x0600,
@@ -25,6 +27,7 @@ pub enum CrosEcCmd {
 
 pub mod board_version;
 pub mod charge_control;
+pub mod fp_download;
 pub mod fp_info;
 pub mod fp_mode;
 pub mod fp_set_seed;

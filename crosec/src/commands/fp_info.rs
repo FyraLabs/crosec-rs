@@ -28,6 +28,11 @@ pub struct EcResponseFpInfo {
     pub template_dirty: u32,
     pub template_version: u32,
 }
+impl EcResponseFpInfo {
+    pub(crate) fn get_simple_image_size(&self) -> usize {
+        (self.width as usize) * (self.height as usize) * (self.bpp as usize) / 8
+    }
+}
 
 pub fn fp_info(file: &mut File) -> EcCmdResult<EcResponseFpInfo> {
     let fd = file.as_raw_fd();

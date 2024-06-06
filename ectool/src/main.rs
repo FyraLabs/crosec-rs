@@ -9,6 +9,7 @@ use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use crosec::wait_event::{event::EcMkbpEventType, wait_event};
+use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
 use num_traits::cast::FromPrimitive;
 
 use crosec::battery::battery;
@@ -30,6 +31,8 @@ use crosec::{
     CROS_EC_PATH, CROS_FP_PATH, EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT,
     EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN,
 };
+
+mod fp_download_subcommand;
 
 #[derive(Parser)]
 struct Cli {
@@ -106,6 +109,10 @@ enum Commands {
         /// Timeout in milliseconds
         timeout: i32,
         device: Option<Device>,
+    },
+    FpDownload {
+        #[command(subcommand)]
+        command: FpDownloadSubcommand,
     },
 }
 
@@ -324,6 +331,7 @@ fn main() -> Result<()> {
                 wait_event(&mut file, EcMkbpEventType::from_str(&event_type)?, timeout).unwrap();
             println!("{result:#?}");
         }
+        Commands::FpDownload { command } => fp_download_subcommand(command)?,
     }
 
     Ok(())

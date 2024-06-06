@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bytemuck = { version = "1.16.0", features = ["derive"] }
 nix = { version = "0.27.1", features = ["ioctl"] }
+num = "0.4.3"
 num-derive = "0.4.2"
 num-traits = "0.2.18"
 strum = "0.26.2"
