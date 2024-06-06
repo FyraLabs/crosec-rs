@@ -9,6 +9,7 @@ use crosec::commands::fp_mode::{fp_mode, FpMode};
 use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
+use crosec::wait_event::{event::EcMkbpEventType, wait_event};
 use num_traits::cast::FromPrimitive;
 
 use crosec::battery::battery;
@@ -100,6 +101,12 @@ enum Commands {
     },
     FpMode {
         mode: Vec<String>,
+    },
+    WaitEvent {
+        event_type: String,
+        /// Timeout in milliseconds
+        timeout: i32,
+        device: Option<Device>,
     },
 }
 
@@ -320,6 +327,16 @@ fn main() -> Result<()> {
             let mode = fp_mode(fd, mode)?;
             let display = FpMode::display(mode);
             println!("FP mode: {display}");
+        }
+        Commands::WaitEvent {
+            event_type,
+            device,
+            timeout,
+        } => {
+            let mut file = File::open(device.unwrap_or_default().get_path())?;
+            let result =
+                wait_event(&mut file, EcMkbpEventType::from_str(&event_type)?, timeout).unwrap();
+            println!("{result:#?}");
         }
     }
 

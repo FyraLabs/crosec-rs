@@ -9,6 +9,7 @@ pub mod ec_command;
 pub mod get_number_of_fans;
 pub mod read_mem_any;
 pub mod read_mem_string;
+pub mod wait_event;
 
 #[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum EcResponseStatus {
