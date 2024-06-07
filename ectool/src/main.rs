@@ -102,7 +102,7 @@ enum Commands {
         seed: String,
     },
     FpMode {
-        mode: Vec<String>,
+        mode: Vec<FpMode>,
     },
     WaitEvent {
         event_type: String,
@@ -252,7 +252,7 @@ fn main() -> Result<()> {
             let mode = if mode.len() > 0 {
                 let mut mode_number: u32 = 0;
                 for mode in mode {
-                    mode_number |= FpMode::from_str(&mode)? as u32;
+                    mode_number |= mode as u32;
                 }
                 mode_number
             } else {

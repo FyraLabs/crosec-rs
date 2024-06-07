@@ -9,6 +9,7 @@ use super::CrosEcCmd;
 
 /// Note that with the ChromiumOS ectool, to start enrolling, as well as continue the next step in enrolling, you do `ectool --name=cros_fp fpmode enroll`. The equivalent of this is to do `ectool fp-mode EnrollImage EnrollSession`.
 #[derive(EnumString, EnumIter, IntoStaticStr, Clone, Copy)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[repr(u32)]
 pub enum FpMode {
     Reset = 0b00000000000000000000000000000000,
