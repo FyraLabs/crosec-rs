@@ -1,16 +1,8 @@
 use crate::CROS_EC_IOC_MAGIC;
-use bytemuck::{Pod, Zeroable};
 use nix::ioctl_readwrite;
 use std::{ffi::c_int, fs::File, os::fd::AsRawFd};
 
 const EC_MEM_MAP_SIZE: usize = 255;
-
-#[repr(C, align(1))]
-#[derive(Pod, Zeroable, Copy, Clone)]
-struct EcParamsReadMem {
-    offset: u8,
-    size: u8,
-}
 
 #[repr(C)]
 struct EcResponseReadMemV2 {
