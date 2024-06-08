@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use charge_control_subcommand::{charge_control_subcommand, ChargeControlSubcommand};
+use check_seed::check_seed;
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
 use crosec::commands::fp_info::fp_info;
@@ -30,6 +31,7 @@ use crosec::{
 };
 
 mod charge_control_subcommand;
+mod check_seed;
 mod fp_download_subcommand;
 mod fp_upload_template_command;
 
@@ -98,7 +100,8 @@ enum Commands {
     FpInfo,
     FpStats,
     FpSetSeed {
-        seed: String,
+        #[arg(value_parser = check_seed)]
+        seed: [u8; FP_CONTEXT_TPM_BYTES],
     },
     FpMode {
         mode: Vec<FpMode>,
@@ -234,19 +237,9 @@ fn main() -> Result<()> {
             println!("{stats:#?}");
         }
         Commands::FpSetSeed { seed } => {
-            match <Vec<u8> as TryInto<[u8; FP_CONTEXT_TPM_BYTES]>>::try_into(
-                seed.as_bytes().to_owned(),
-            ) {
-                Ok(seed) => {
-                    let mut file = File::open(CROS_FP_PATH)?;
-                    fp_set_seed(&mut file, seed)?;
-                    println!("Set fp seed");
-                }
-                Err(seed) => {
-                    let seed_len = seed.len();
-                    println!("The seed must be {FP_CONTEXT_TPM_BYTES} bytes long. The seed you inputted is {seed_len} bytes long.");
-                }
-            }
+            let mut file = File::open(CROS_FP_PATH)?;
+            fp_set_seed(&mut file, seed)?;
+            println!("Set fp seed");
         }
         Commands::FpMode { mode } => {
             let mode = if mode.len() > 0 {
