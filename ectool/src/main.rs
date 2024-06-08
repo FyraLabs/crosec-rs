@@ -36,6 +36,7 @@ mod fp_download_subcommand;
 mod fp_upload_template_command;
 
 #[derive(Parser)]
+#[command(version, about)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
