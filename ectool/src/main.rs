@@ -107,7 +107,8 @@ enum Commands {
     WaitEvent {
         event_type: String,
         /// Timeout in milliseconds
-        timeout: i32,
+        timeout: Option<i32>,
+        #[arg(short, long)]
         device: Option<Device>,
     },
     FpDownload {
