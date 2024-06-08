@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::str::FromStr;
 
 use charge_control_subcommand::{charge_control_subcommand, ChargeControlSubcommand};
 use clap::{Parser, Subcommand, ValueEnum};
@@ -105,7 +104,7 @@ enum Commands {
         mode: Vec<FpMode>,
     },
     WaitEvent {
-        event_type: String,
+        event_type: EcMkbpEventType,
         /// Timeout in milliseconds
         timeout: Option<i32>,
         #[arg(short, long)]
@@ -270,8 +269,7 @@ fn main() -> Result<()> {
             timeout,
         } => {
             let mut file = File::open(device.unwrap_or_default().get_path())?;
-            let result =
-                wait_event(&mut file, EcMkbpEventType::from_str(&event_type)?, timeout).unwrap();
+            let result = wait_event(&mut file, event_type, timeout).unwrap();
             println!("{result:#?}");
         }
         Commands::FpDownload { command } => fp_download_subcommand(command)?,

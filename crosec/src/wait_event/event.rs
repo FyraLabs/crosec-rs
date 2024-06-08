@@ -5,7 +5,6 @@ use std::{
 
 use bytemuck::{from_bytes, Pod, Zeroable};
 use num_derive::FromPrimitive;
-use strum_macros::{EnumString, IntoStaticStr};
 
 use crate::wait_event::fingerprint::EcMkbpEventFingerprint;
 
@@ -33,7 +32,8 @@ pub enum EcMkbpEvent {
     CecEvent(u32),
 }
 
-#[derive(Debug, IntoStaticStr, EnumString, FromPrimitive, Clone, Copy)]
+#[derive(Debug, FromPrimitive, Clone, Copy)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[repr(u8)]
 pub enum EcMkbpEventType {
     KeyMatrix,
