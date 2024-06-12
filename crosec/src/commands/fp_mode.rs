@@ -1,5 +1,6 @@
+use std::os::fd::AsRawFd;
+
 use bytemuck::{Pod, Zeroable};
-use std::{fs::File, os::fd::AsRawFd};
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, EnumString, IntoStaticStr};
 
@@ -51,7 +52,7 @@ struct EcResponseFpMode {
     mode: u32,
 }
 
-pub fn fp_mode(file: &mut File, mode: u32) -> EcCmdResult<u32> {
+pub fn fp_mode<File: AsRawFd>(file: &mut File, mode: u32) -> EcCmdResult<u32> {
     let response: EcResponseFpMode = ec_command_bytemuck(
         CrosEcCmd::FpMode,
         0,
