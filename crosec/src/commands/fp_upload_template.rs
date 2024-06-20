@@ -1,12 +1,12 @@
-use std::{fs::File, mem::offset_of, os::fd::AsRawFd};
+use std::{mem::offset_of, os::fd::AsRawFd};
 
 use bytemuck::{bytes_of, Pod, Zeroable};
 
 use crate::{ec_command::ec_command_with_dynamic_output_size, EcCmdResult};
 
 use super::{
-    fp_download::FpTemplate, fp_info::EcResponseFpInfo,
-    get_protocol_info::EcResponseGetProtocolInfo, CrosEcCmd,
+    CrosEcCmd, fp_download::FpTemplate,
+    fp_info::EcResponseFpInfo, get_protocol_info::EcResponseGetProtocolInfo,
 };
 
 #[derive(Pod, Zeroable, Clone, Copy)]
@@ -20,7 +20,7 @@ struct EcParamsFpTemplateWithoutData {
 /// Flag in the 'size' field indicating that the full template has been sent
 const FP_TEMPLATE_COMMIT: u32 = 0x80000000;
 
-pub fn fp_upload_template(
+pub fn fp_upload_template<File: AsRawFd>(
     file: &mut File,
     protocol_info: &EcResponseGetProtocolInfo,
     fp_info: &EcResponseFpInfo,

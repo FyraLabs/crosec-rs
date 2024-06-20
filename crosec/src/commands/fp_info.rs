@@ -1,12 +1,12 @@
-use std::{fs::File, os::fd::AsRawFd};
+use std::os::fd::AsRawFd;
 
 use bytemuck::{Pod, Zeroable};
 
 use crate::{ec_command::ec_command_bytemuck, EcCmdResult};
 
 use super::{
-    get_cmd_versions::{ec_cmd_get_cmd_versions, V1},
     CrosEcCmd,
+    get_cmd_versions::{ec_cmd_get_cmd_versions, V1},
 };
 
 #[repr(C, align(4))]
@@ -41,7 +41,7 @@ impl EcResponseFpInfo {
     }
 }
 
-pub fn fp_info(file: &mut File) -> EcCmdResult<EcResponseFpInfo> {
+pub fn fp_info<File: AsRawFd>(file: &mut File) -> EcCmdResult<EcResponseFpInfo> {
     let fd = file.as_raw_fd();
     let versions = ec_cmd_get_cmd_versions(file, CrosEcCmd::FpInfo)?;
     if versions & V1 == 0 {

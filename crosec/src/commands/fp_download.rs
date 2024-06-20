@@ -1,10 +1,10 @@
-use std::{fs::File, os::fd::AsRawFd, thread::sleep, time::Duration};
+use std::{os::fd::AsRawFd, thread::sleep, time::Duration};
 
 use bytemuck::{bytes_of, Pod, Zeroable};
 
 use crate::ec_command::ec_command_with_dynamic_output_size;
 
-use super::{fp_info::EcResponseFpInfo, get_protocol_info::EcResponseGetProtocolInfo, CrosEcCmd};
+use super::{CrosEcCmd, fp_info::EcResponseFpInfo, get_protocol_info::EcResponseGetProtocolInfo};
 
 #[repr(C)]
 #[derive(Pod, Zeroable, Clone, Copy)]
@@ -31,7 +31,7 @@ pub enum DownloadType {
 
 /// Downloads a frame buffer from the FPMCU.
 /// The downloaded data might be either the finger image or a finger template.
-pub fn fp_download(
+pub fn fp_download<File: AsRawFd>(
     file: &mut File,
     fp_info: &EcResponseFpInfo,
     protocol_info: &EcResponseGetProtocolInfo,
@@ -101,7 +101,7 @@ impl FpTemplate {
     }
 }
 
-pub fn fp_download_template(
+pub fn fp_download_template<File: AsRawFd>(
     file: &mut File,
     fp_info: &EcResponseFpInfo,
     protocol_info: &EcResponseGetProtocolInfo,

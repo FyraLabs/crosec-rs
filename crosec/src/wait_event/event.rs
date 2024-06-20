@@ -1,7 +1,6 @@
-use std::{
-    io::{self, Read},
-    mem::size_of,
-};
+use std::io;
+use std::mem::size_of;
+use async_std::io::ReadExt;
 
 use bytemuck::{from_bytes, Pod, Zeroable};
 use num_derive::FromPrimitive;
@@ -50,6 +49,7 @@ pub enum EcMkbpEventType {
     OnlineCalibration,
     Pchg,
 }
+
 impl EcMkbpEventType {
     fn data_size(&self) -> usize {
         match self {
@@ -66,17 +66,27 @@ impl EcMkbpEventType {
         }
     }
 
-    pub(crate) fn read<T: Read>(&self, stream: &mut T) -> io::Result<EcMkbpEvent> {
-        let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
-        stream.read_exact(&mut event)?;
+    fn parse_event(&self, event: &mut Vec<u8>) -> EcMkbpEvent {
         debug_assert_eq!(event[0], *self as u8);
         event.remove(0);
         let data = event;
-        Ok(match self {
+        match self {
             EcMkbpEventType::Fingerprint => {
                 EcMkbpEvent::Fingerprint(from_bytes::<EcMkbpEventFingerprint>(&data).to_owned())
             }
             event_type => panic!("{event_type:#?} from_bytes not implemented yet"),
-        })
+        }
+    }
+
+    pub(crate) fn read_sync<T: std::io::Read>(&self, stream: &mut T) -> io::Result<EcMkbpEvent> {
+        let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
+        stream.read_exact(&mut event)?;
+        Ok(self.parse_event(&mut event))
+    }
+
+    pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(&self, stream: &mut T) -> io::Result<EcMkbpEvent> {
+        let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
+        stream.read_exact(&mut event).await?;
+        Ok(self.parse_event(&mut event))
     }
 }

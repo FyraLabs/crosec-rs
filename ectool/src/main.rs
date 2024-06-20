@@ -9,7 +9,7 @@ use crosec::commands::fp_mode::{fp_mode, FpMode};
 use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
-use crosec::wait_event::{event::EcMkbpEventType, wait_event};
+use crosec::wait_event::{event::EcMkbpEventType, wait_event_sync};
 use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
 use fp_upload_template_command::fp_upload_template_command;
 use num_traits::cast::FromPrimitive;
@@ -29,11 +29,13 @@ use crosec::{
     CROS_EC_PATH, CROS_FP_PATH, EC_FAN_SPEED_ENTRIES, EC_FAN_SPEED_NOT_PRESENT,
     EC_FAN_SPEED_STALLED, EC_MEM_MAP_FAN,
 };
+use crate::fp_get_encryption_status_command::fp_get_encryption_status_command;
 
 mod charge_control_subcommand;
 mod check_seed;
 mod fp_download_subcommand;
 mod fp_upload_template_command;
+mod fp_get_encryption_status_command;
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -120,6 +122,7 @@ enum Commands {
     },
     /// Uploads template from stdin
     FpUploadTemplate,
+    FpGetEncryptionStatus,
 }
 
 fn main() -> Result<()> {
@@ -263,11 +266,12 @@ fn main() -> Result<()> {
             timeout,
         } => {
             let mut file = File::open(device.unwrap_or_default().get_path())?;
-            let result = wait_event(&mut file, event_type, timeout).unwrap();
+            let result = wait_event_sync(&mut file, event_type, timeout).unwrap();
             println!("{result:#?}");
         }
         Commands::FpDownload { command } => fp_download_subcommand(command)?,
         Commands::FpUploadTemplate => fp_upload_template_command()?,
+        Commands::FpGetEncryptionStatus => fp_get_encryption_status_command()?,
     }
 
     Ok(())

@@ -1,4 +1,4 @@
-use std::{fs::File, mem::size_of, os::fd::AsRawFd};
+use std::{mem::size_of, os::fd::AsRawFd};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -42,6 +42,6 @@ struct EcHostResponse {
     reserved: u16,
 }
 
-pub fn get_protocol_info(file: &mut File) -> EcCmdResult<EcResponseGetProtocolInfo> {
+pub fn get_protocol_info<File: AsRawFd>(file: &mut File) -> EcCmdResult<EcResponseGetProtocolInfo> {
     ec_command_bytemuck(CrosEcCmd::GetProtocolInfo, 0, &(), file.as_raw_fd())
 }

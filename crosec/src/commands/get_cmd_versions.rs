@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::os::fd::AsRawFd;
 
 use bytemuck::{Pod, Zeroable};
@@ -29,7 +28,7 @@ pub const V0: u32 = 0b001;
 pub const V1: u32 = 0b010;
 pub const V2: u32 = 0b100;
 
-pub fn ec_cmd_get_cmd_versions(file: &mut File, cmd: CrosEcCmd) -> EcCmdResult<u32> {
+pub fn ec_cmd_get_cmd_versions<File: AsRawFd>(file: &mut File, cmd: CrosEcCmd) -> EcCmdResult<u32> {
     let fd = file.as_raw_fd();
     let response: EcResponseGetCmdVersion = match ec_command_bytemuck(
         CrosEcCmd::GetCmdVersions,

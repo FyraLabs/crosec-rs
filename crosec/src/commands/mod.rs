@@ -22,6 +22,7 @@ pub enum CrosEcCmd {
     FpTemplate = 0x0405,
     FpStats = 0x0407,
     FpSetSeed = 0x0408,
+    FpGetEncryptionStatus = 0x0409,
     BatteryGetStatic = 0x0600,
 }
 
@@ -29,6 +30,7 @@ pub mod board_version;
 pub mod charge_control;
 pub mod fp_download;
 pub mod fp_info;
+pub mod fp_get_encryption_status;
 pub mod fp_mode;
 pub mod fp_set_seed;
 pub mod fp_stats;
