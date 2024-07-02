@@ -1,11 +1,16 @@
-use std::mem::size_of;
+use std::{fs::File, os::fd::AsRawFd};
 
 use bytemuck::{Pod, Zeroable};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use crate::{commands::CrosEcCmd, ec_command, EcCmdResult, EcInterface};
-use crate::dev::BUF_SIZE;
+use crate::{
+    commands::CrosEcCmd,
+    ec_command::{ec_command_bytemuck, ec_command_with_dynamic_output_size},
+    EcCmdResult,
+};
+
+use super::get_protocol_info::EcResponseGetProtocolInfo;
 
 const TOOLVERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -28,7 +33,10 @@ enum EcImage {
     RwB = 4,
 }
 
-pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)> {
+pub fn ec_cmd_version(
+    file: &mut File,
+    protocol_info: &EcResponseGetProtocolInfo,
+) -> EcCmdResult<(String, String, String, String, String)> {
     let params = EcResponseVersionV1 {
         version_string_ro: [0; 32],
         version_string_rw: [0; 32],
@@ -37,12 +45,8 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
         cros_fwid_rw: [0; 32],
     };
 
-    let build_string: [u8; BUF_SIZE] = [0; BUF_SIZE];
-    let params_slice = bytemuck::bytes_of(&params);
-
-    let mut result = ec_command(CrosEcCmd::Version, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
-    result.resize(size_of::<EcResponseVersionV1>(), Default::default());
-    let response = bytemuck::from_bytes::<EcResponseVersionV1>(&result);
+    let response: EcResponseVersionV1 =
+        ec_command_bytemuck(CrosEcCmd::Version, 0, &params, file.as_raw_fd())?;
 
     let ro_ver = String::from_utf8(response.version_string_ro.to_vec()).unwrap_or_default();
     let rw_ver = String::from_utf8(response.version_string_rw.to_vec()).unwrap_or_default();
@@ -56,9 +60,13 @@ pub fn ec_cmd_version() -> EcCmdResult<(String, String, String, String, String)>
         None => String::from("Unknown"),
     };
 
-    let build_string_slice = &build_string;
-
-    let result = ec_command(CrosEcCmd::GetBuildInfo, 0, build_string_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
+    let result = ec_command_with_dynamic_output_size(
+        CrosEcCmd::GetBuildInfo,
+        0,
+        &[0; 248],
+        protocol_info.max_ec_output_size(),
+        file.as_raw_fd(),
+    )?;
 
     let build_info = String::from_utf8(result).unwrap_or(String::from(""));
     Ok((ro_ver, rw_ver, image, build_info, String::from(TOOLVERSION)))
