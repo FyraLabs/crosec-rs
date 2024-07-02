@@ -12,6 +12,7 @@ use crate::CROS_EC_IOC_MAGIC;
 
 pub mod event;
 pub mod fingerprint;
+pub mod host_event;
 
 const POLL_IN: i16 = 0x001;
 

@@ -1,11 +1,13 @@
+use async_std::io::ReadExt;
 use std::io;
 use std::mem::size_of;
-use async_std::io::ReadExt;
 
 use bytemuck::{from_bytes, Pod, Zeroable};
 use num_derive::FromPrimitive;
 
 use crate::wait_event::fingerprint::EcMkbpEventFingerprint;
+
+use super::host_event::EcMkbpEventHostEvent;
 
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
 #[repr(C, packed)]
@@ -21,7 +23,7 @@ pub struct EcResponseMotionSenseFifoInfo {
 #[repr(u8)]
 pub enum EcMkbpEvent {
     KeyMatrix([u8; 13]),
-    HostEvent(u32),
+    HostEvent(EcMkbpEventHostEvent),
     HostEvent64(u64),
     SensorFifo(EcResponseMotionSenseFifoInfo),
     Buttons(u32),
@@ -74,6 +76,9 @@ impl EcMkbpEventType {
             EcMkbpEventType::Fingerprint => {
                 EcMkbpEvent::Fingerprint(from_bytes::<EcMkbpEventFingerprint>(&data).to_owned())
             }
+            EcMkbpEventType::HostEvent => {
+                EcMkbpEvent::HostEvent(from_bytes::<EcMkbpEventHostEvent>(&data).to_owned())
+            }
             event_type => panic!("{event_type:#?} from_bytes not implemented yet"),
         }
     }
@@ -84,7 +89,10 @@ impl EcMkbpEventType {
         Ok(self.parse_event(&mut event))
     }
 
-    pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(&self, stream: &mut T) -> io::Result<EcMkbpEvent> {
+    pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(
+        &self,
+        stream: &mut T,
+    ) -> io::Result<EcMkbpEvent> {
         let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
         stream.read_exact(&mut event).await?;
         Ok(self.parse_event(&mut event))
