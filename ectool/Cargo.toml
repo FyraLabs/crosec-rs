@@ -11,5 +11,4 @@ crosec = { version = "0.1.0", path = "../crosec", features = ["clap"] }
 color-eyre = "0.6.2"
 clap = { version = "4.5.4", features = ["derive"] }
 num-traits = "0.2.19"
-bytemuck = "1.16.0"
 image = "0.25.1"

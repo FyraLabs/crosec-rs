@@ -1,3 +1,5 @@
+#![warn(unused_crate_dependencies)]
+
 use nix::errno::Errno;
 use num_derive::FromPrimitive;
 use thiserror::Error;

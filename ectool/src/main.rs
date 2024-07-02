@@ -1,3 +1,5 @@
+#![warn(unused_crate_dependencies)]
+
 use std::fs::File;
 
 use charge_control_subcommand::{charge_control_subcommand, ChargeControlSubcommand};
