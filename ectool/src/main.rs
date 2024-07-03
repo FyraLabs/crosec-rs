@@ -16,6 +16,7 @@ use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
 use fp_upload_template_command::fp_upload_template_command;
 use get_uptime_info_command::get_uptime_info_commnad;
 use num_traits::cast::FromPrimitive;
+use strum::IntoEnumIterator;
 
 use crate::fp_get_encryption_status_command::fp_get_encryption_status_command;
 use crosec::battery::battery;
@@ -114,8 +115,9 @@ enum Commands {
         mode: Vec<FpMode>,
     },
     WaitEvent {
-        event_type: EcMkbpEventType,
+        event_types: Vec<EcMkbpEventType>,
         /// Timeout in milliseconds
+        #[arg(short, long)]
         timeout: Option<i32>,
         #[arg(short, long)]
         device: Option<Device>,
@@ -268,13 +270,16 @@ fn main() -> Result<()> {
             println!("FP mode: {display}");
         }
         Commands::WaitEvent {
-            event_type,
+            mut event_types,
             device,
             timeout,
         } => {
+            if event_types.len() == 0 {
+                event_types = EcMkbpEventType::iter().collect();
+            }
             let mut file = File::open(device.unwrap_or_default().get_path())?;
             println!("Waiting for event...");
-            let result = wait_event_sync(&mut file, event_type, timeout).unwrap();
+            let result = wait_event_sync(&mut file, event_types, timeout).unwrap();
             println!("{result:#?}");
         }
         Commands::FpDownload { command } => fp_download_subcommand(command)?,

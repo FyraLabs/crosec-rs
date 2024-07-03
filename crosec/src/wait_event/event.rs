@@ -1,6 +1,9 @@
 use async_std::io::ReadExt;
+use num::FromPrimitive;
 use std::io;
 use std::mem::size_of;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 use bytemuck::{from_bytes, Pod, Zeroable};
 use num_derive::FromPrimitive;
@@ -32,8 +35,37 @@ pub enum EcMkbpEvent {
     Sysrq(u32),
     CecEvent(u32),
 }
+impl EcMkbpEvent {
+    fn max_event_size() -> usize {
+        EcMkbpEventType::iter()
+            .map(|e| e.data_size())
+            .max()
+            .unwrap_or_default()
+    }
 
-#[derive(Debug, FromPrimitive, Clone, Copy)]
+    fn from_bytes(bytes: &[u8]) -> Self {
+        let event_type = EcMkbpEventType::from_u8(bytes[0]).unwrap();
+        event_type.event_from_bytes(&mut bytes[1..1 + event_type.data_size()].to_vec())
+    }
+
+    pub(crate) fn read_sync<T: std::io::Read>(stream: &mut T) -> io::Result<Self> {
+        let mut buf: Vec<u8> =
+            vec![Default::default(); size_of::<EcMkbpEventType>() + Self::max_event_size()];
+        stream.read(&mut buf)?;
+        Ok(Self::from_bytes(&buf))
+    }
+
+    pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(
+        stream: &mut T,
+    ) -> io::Result<Self> {
+        let mut buf: Vec<u8> =
+            vec![Default::default(); size_of::<EcMkbpEventType>() + Self::max_event_size()];
+        stream.read(&mut buf).await?;
+        Ok(Self::from_bytes(&buf))
+    }
+}
+
+#[derive(Debug, FromPrimitive, Clone, Copy, EnumIter, PartialEq)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[repr(u8)]
 pub enum EcMkbpEventType {
@@ -68,33 +100,15 @@ impl EcMkbpEventType {
         }
     }
 
-    fn parse_event(&self, event: &mut Vec<u8>) -> EcMkbpEvent {
-        debug_assert_eq!(event[0], *self as u8);
-        event.remove(0);
-        let data = event;
+    fn event_from_bytes(&self, event: &[u8]) -> EcMkbpEvent {
         match self {
             EcMkbpEventType::Fingerprint => {
-                EcMkbpEvent::Fingerprint(from_bytes::<EcMkbpEventFingerprint>(&data).to_owned())
+                EcMkbpEvent::Fingerprint(from_bytes::<EcMkbpEventFingerprint>(&event).to_owned())
             }
             EcMkbpEventType::HostEvent => {
-                EcMkbpEvent::HostEvent(from_bytes::<EcMkbpEventHostEvent>(&data).to_owned())
+                EcMkbpEvent::HostEvent(from_bytes::<EcMkbpEventHostEvent>(&event).to_owned())
             }
             event_type => panic!("{event_type:#?} from_bytes not implemented yet"),
         }
-    }
-
-    pub(crate) fn read_sync<T: std::io::Read>(&self, stream: &mut T) -> io::Result<EcMkbpEvent> {
-        let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
-        stream.read_exact(&mut event)?;
-        Ok(self.parse_event(&mut event))
-    }
-
-    pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(
-        &self,
-        stream: &mut T,
-    ) -> io::Result<EcMkbpEvent> {
-        let mut event = vec![Default::default(); size_of::<Self>() + self.data_size()];
-        stream.read_exact(&mut event).await?;
-        Ok(self.parse_event(&mut event))
     }
 }

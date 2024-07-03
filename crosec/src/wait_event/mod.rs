@@ -1,5 +1,4 @@
-use std::io;
-use std::os::fd::AsRawFd;
+use std::{io, os::fd::AsRawFd};
 
 use nix::{
     libc::{ioctl, poll, pollfd},
@@ -23,18 +22,26 @@ pub enum PollData {
     SomethingElseHappened(i16),
 }
 
+fn get_mask<I: IntoIterator<Item = EcMkbpEventType>>(event_types: I) -> i32 {
+    let mut mask = i32::default();
+    for event_type in event_types {
+        mask |= 1 << event_type as u8;
+    }
+    assert_ne!(mask, 0, "Must specify at least one event type");
+    mask
+}
+
 /// If no timeout is specified, this function will wait for an unlimited amount of time
-pub fn wait_event_sync<File: AsRawFd + std::io::Read>(
+pub fn wait_event_sync<File: AsRawFd + std::io::Read, I: IntoIterator<Item = EcMkbpEventType>>(
     file: &mut File,
-    event_type: EcMkbpEventType,
+    event_types: I,
     timeout: Option<i32>,
 ) -> Result<PollData, i32> {
-    let mask = 1 << event_type as u8;
     unsafe {
         ioctl(
             file.as_raw_fd(),
             request_code_none!(CROS_EC_IOC_MAGIC, 2),
-            mask,
+            get_mask(event_types),
         )
     };
     match timeout {
@@ -48,27 +55,33 @@ pub fn wait_event_sync<File: AsRawFd + std::io::Read>(
             match result {
                 0 => Ok(PollData::Timeout),
                 1 => match fds.revents {
-                    POLL_IN => Ok(PollData::EventHappened(event_type.read_sync(file).unwrap())),
+                    POLL_IN => Ok(PollData::EventHappened(
+                        EcMkbpEvent::read_sync(file).unwrap(),
+                    )),
                     events => Ok(PollData::SomethingElseHappened(events)),
                 },
                 result => Err(result),
             }
         }
-        None => Ok(PollData::EventHappened(event_type.read_sync(file).unwrap())),
+        None => Ok(PollData::EventHappened(
+            EcMkbpEvent::read_sync(file).unwrap(),
+        )),
     }
 }
 
-pub async fn wait_event_async<File: AsRawFd + async_std::io::Read + Unpin>(
+pub async fn wait_event_async<
+    File: AsRawFd + async_std::io::Read + Unpin,
+    I: IntoIterator<Item = EcMkbpEventType>,
+>(
     file: &mut File,
-    event_type: EcMkbpEventType,
+    event_types: I,
 ) -> io::Result<EcMkbpEvent> {
-    let mask = 1 << event_type as u8;
     unsafe {
         ioctl(
             file.as_raw_fd(),
             request_code_none!(CROS_EC_IOC_MAGIC, 2),
-            mask,
+            get_mask(event_types),
         )
     };
-    event_type.read_async(file).await
+    EcMkbpEvent::read_async(file).await
 }
