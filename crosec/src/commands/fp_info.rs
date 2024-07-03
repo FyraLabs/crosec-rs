@@ -5,8 +5,8 @@ use bytemuck::{Pod, Zeroable};
 use crate::{ec_command::ec_command_bytemuck, EcCmdResult};
 
 use super::{
-    CrosEcCmd,
     get_cmd_versions::{ec_cmd_get_cmd_versions, V1},
+    CrosEcCmd,
 };
 
 #[repr(C, align(4))]

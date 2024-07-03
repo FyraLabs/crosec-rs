@@ -17,7 +17,10 @@ struct EcParamsFpSeed {
     pub seed: [u8; FP_CONTEXT_TPM_BYTES],
 }
 
-pub fn fp_set_seed<File: AsRawFd>(file: &mut File, seed: [u8; FP_CONTEXT_TPM_BYTES]) -> EcCmdResult<()> {
+pub fn fp_set_seed<File: AsRawFd>(
+    file: &mut File,
+    seed: [u8; FP_CONTEXT_TPM_BYTES],
+) -> EcCmdResult<()> {
     ec_command_bytemuck(
         CrosEcCmd::FpSetSeed,
         0,

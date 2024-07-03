@@ -4,7 +4,7 @@ use bytemuck::{bytes_of, Pod, Zeroable};
 
 use crate::ec_command::ec_command_with_dynamic_output_size;
 
-use super::{CrosEcCmd, fp_info::EcResponseFpInfo, get_protocol_info::EcResponseGetProtocolInfo};
+use super::{fp_info::EcResponseFpInfo, get_protocol_info::EcResponseGetProtocolInfo, CrosEcCmd};
 
 #[repr(C)]
 #[derive(Pod, Zeroable, Clone, Copy)]
