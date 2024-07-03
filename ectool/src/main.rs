@@ -14,6 +14,7 @@ use crosec::commands::get_protocol_info::get_protocol_info;
 use crosec::wait_event::{event::EcMkbpEventType, wait_event_sync};
 use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
 use fp_upload_template_command::fp_upload_template_command;
+use get_uptime_info_command::get_uptime_info_commnad;
 use num_traits::cast::FromPrimitive;
 
 use crate::fp_get_encryption_status_command::fp_get_encryption_status_command;
@@ -38,6 +39,7 @@ mod check_seed;
 mod fp_download_subcommand;
 mod fp_get_encryption_status_command;
 mod fp_upload_template_command;
+mod get_uptime_info_command;
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -125,6 +127,9 @@ enum Commands {
     /// Uploads template from stdin
     FpUploadTemplate,
     FpGetEncryptionStatus,
+    GetUptimeInfo {
+        device: Option<Device>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -275,6 +280,7 @@ fn main() -> Result<()> {
         Commands::FpDownload { command } => fp_download_subcommand(command)?,
         Commands::FpUploadTemplate => fp_upload_template_command()?,
         Commands::FpGetEncryptionStatus => fp_get_encryption_status_command()?,
+        Commands::GetUptimeInfo { device } => get_uptime_info_commnad(device)?,
     }
 
     Ok(())
