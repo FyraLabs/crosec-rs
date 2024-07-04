@@ -207,10 +207,10 @@ fn main() -> Result<()> {
         }
         Commands::GetFanRpm => {
             let mut file = File::open(CROS_EC_PATH)?;
-            let features = ec_cmd_get_features(&mut file).map_err(|e| Error::GetFeatures(e))?;
+            let features = ec_cmd_get_features(&mut file).map_err(Error::GetFeatures)?;
             if features & EC_FEATURE_PWM_FAN != 0 {
                 read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(&mut file, EC_MEM_MAP_FAN)
-                    .map_err(|e| Error::ReadMem(e))?
+                    .map_err(Error::ReadMem)?
                     .into_iter()
                     .enumerate()
                     .for_each(|(i, fan)| match fan {
@@ -255,7 +255,7 @@ fn main() -> Result<()> {
             println!("Set fp seed");
         }
         Commands::FpMode { mode } => {
-            let mode = if mode.len() > 0 {
+            let mode = if !mode.is_empty() {
                 let mut mode_number: u32 = 0;
                 for mode in mode {
                     mode_number |= mode as u32;
@@ -274,7 +274,7 @@ fn main() -> Result<()> {
             device,
             timeout,
         } => {
-            if event_types.len() == 0 {
+            if event_types.is_empty() {
                 event_types = EcMkbpEventType::iter().collect();
             }
             let mut file = File::open(device.unwrap_or_default().get_path())?;

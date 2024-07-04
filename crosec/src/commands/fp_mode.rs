@@ -31,8 +31,8 @@ impl FpMode {
         let flags = match fp_mode {
             0 => <FpMode as Into<&'static str>>::into(Self::Reset).to_owned(),
             fp_mode => Self::iter()
-                .filter(|flag| fp_mode as u32 & *flag as u32 != 0)
-                .map(|flag| <FpMode as Into<&'static str>>::into(flag))
+                .filter(|flag| fp_mode & *flag as u32 != 0)
+                .map(<FpMode as Into<&'static str>>::into)
                 .collect::<Vec<_>>()
                 .join(", "),
         };

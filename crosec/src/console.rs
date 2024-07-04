@@ -21,7 +21,7 @@ pub fn console(file: &mut File, protocol_info: &EcResponseGetProtocolInfo) -> Ec
         // Get rid of trailing null characters
         let chunk = chunk.trim_end_matches('\0');
         if !chunk.is_empty() {
-            console += &chunk;
+            console += chunk;
         } else {
             break;
         }

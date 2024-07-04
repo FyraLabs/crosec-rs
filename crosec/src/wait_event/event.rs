@@ -45,14 +45,14 @@ impl EcMkbpEvent {
 
     fn from_bytes(bytes: &[u8]) -> Self {
         let event_type = EcMkbpEventType::from_u8(bytes[0]).unwrap();
-        event_type.event_from_bytes(&mut bytes[1..1 + event_type.data_size()].to_vec())
+        event_type.event_from_bytes(bytes[1..1 + event_type.data_size()].to_vec())
     }
 
     pub(crate) fn read_sync<T: std::io::Read>(stream: &mut T) -> io::Result<Self> {
         let mut buf: Vec<u8> =
             vec![Default::default(); size_of::<EcMkbpEventType>() + Self::max_event_size()];
-        stream.read(&mut buf)?;
-        Ok(Self::from_bytes(&buf))
+        let bytes_read = stream.read(&mut buf)?;
+        Ok(Self::from_bytes(&buf[..bytes_read]))
     }
 
     pub(crate) async fn read_async<T: async_std::io::Read + Unpin>(
@@ -60,8 +60,8 @@ impl EcMkbpEvent {
     ) -> io::Result<Self> {
         let mut buf: Vec<u8> =
             vec![Default::default(); size_of::<EcMkbpEventType>() + Self::max_event_size()];
-        stream.read(&mut buf).await?;
-        Ok(Self::from_bytes(&buf))
+        let bytes_read = stream.read(&mut buf).await?;
+        Ok(Self::from_bytes(&buf[..bytes_read]))
     }
 }
 
@@ -100,7 +100,7 @@ impl EcMkbpEventType {
         }
     }
 
-    fn event_from_bytes(&self, event: &[u8]) -> EcMkbpEvent {
+    fn event_from_bytes(&self, event: Vec<u8>) -> EcMkbpEvent {
         match self {
             EcMkbpEventType::Fingerprint => {
                 EcMkbpEvent::Fingerprint(from_bytes::<EcMkbpEventFingerprint>(&event).to_owned())

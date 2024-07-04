@@ -27,10 +27,10 @@ impl Display for Error {
 }
 
 pub fn get_number_of_fans(file: &mut File) -> Result<usize, Error> {
-    let features = ec_cmd_get_features(file).map_err(|e| Error::GetFeatures(e))?;
+    let features = ec_cmd_get_features(file).map_err(Error::GetFeatures)?;
     let number_of_fans = if features & EC_FEATURE_PWM_FAN != 0 {
         read_mem_any::<[u16; EC_FAN_SPEED_ENTRIES]>(file, EC_MEM_MAP_FAN)
-            .map_err(|e| Error::ReadMem(e))?
+            .map_err(Error::ReadMem)?
             .into_iter()
             .filter(|data| *data != EC_FAN_SPEED_NOT_PRESENT)
             .count()

@@ -46,7 +46,7 @@ pub fn ec_command_with_dynamic_output_size(
         buffer
     });
     let result = unsafe { cros_ec_cmd(fd, cmd_vec.as_mut_ptr() as *mut _ as *mut CrosEcCommandV2) };
-    let _output_size = result.map_err(|err| EcError::DeviceError(err))?;
+    let _output_size = result.map_err(EcError::DeviceError)?;
     let cmd_without_data =
         bytemuck::from_bytes::<CrosEcCommandV2>(&cmd_vec[..size_of::<CrosEcCommandV2>()]);
     let status = FromPrimitive::from_u32(cmd_without_data.result)

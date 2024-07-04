@@ -84,9 +84,9 @@ pub struct FpTemplate {
     vec: Vec<u8>,
 }
 
-impl Into<Vec<u8>> for FpTemplate {
-    fn into(self) -> Vec<u8> {
-        self.vec
+impl From<FpTemplate> for Vec<u8> {
+    fn from(value: FpTemplate) -> Self {
+        value.vec
     }
 }
 
@@ -96,6 +96,8 @@ impl FpTemplate {
     }
 
     /// Make sure your buffer is actually a compatible fp template
+    /// # Safety
+    /// Make sure you're uploading a template from the same FPMCU with the same version and the same seed set.
     pub unsafe fn from_vec_unchecked(vec: Vec<u8>) -> Self {
         FpTemplate { vec }
     }

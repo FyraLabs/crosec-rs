@@ -1,8 +1,7 @@
 use std::fs::File;
-use std::mem::size_of;
 use std::os::fd::AsRawFd;
 
-use bytemuck::{Pod, Zeroable};
+use bytemuck::{NoUninit, Pod, Zeroable};
 
 use crate::commands::CrosEcCmd;
 use crate::ec_command::ec_command_bytemuck;
@@ -14,22 +13,25 @@ struct EcParamsSetFanTargetRpmV0 {
     rpm: u32,
 }
 
+#[derive(Clone, Copy, NoUninit)]
+#[repr(C, align(1))]
 struct EcParamsSetFanTargetRpmV1 {
     rpm: u32,
     fan_index: u8,
+    _padding: [u8; 3],
 }
 
-impl EcParamsSetFanTargetRpmV1 {
-    pub fn to_le_bytes(self) -> [u8; size_of::<u32>() + size_of::<u8>()] {
-        [
-            self.rpm.to_le_bytes().to_vec(),
-            self.fan_index.to_le_bytes().to_vec(),
-        ]
-        .concat()
-        .try_into()
-        .unwrap()
-    }
-}
+// impl EcParamsSetFanTargetRpmV1 {
+//     pub fn to_le_bytes(self) -> [u8; size_of::<u32>() + size_of::<u8>()] {
+//         [
+//             self.rpm.to_le_bytes().to_vec(),
+//             self.fan_index.to_le_bytes().to_vec(),
+//         ]
+//         .concat()
+//         .try_into()
+//         .unwrap()
+//     }
+// }
 
 pub fn ec_cmd_set_fan_target_rpm(
     file: &mut File,
@@ -46,8 +48,8 @@ pub fn ec_cmd_set_fan_target_rpm(
                 &EcParamsSetFanTargetRpmV1 {
                     rpm,
                     fan_index: index,
-                }
-                .to_le_bytes(),
+                    _padding: Default::default(),
+                },
                 file.as_raw_fd(),
             )?;
         }
