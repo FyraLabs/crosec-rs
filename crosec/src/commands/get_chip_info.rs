@@ -1,6 +1,8 @@
+use std::{fs::File, os::fd::AsRawFd};
+
 use bytemuck::{Pod, Zeroable};
 
-use crate::{commands::CrosEcCmd, ec_command, EcCmdResult, EcInterface};
+use crate::{commands::CrosEcCmd, ec_command::ec_command_bytemuck, EcCmdResult};
 
 #[repr(C, align(4))]
 #[derive(Pod, Zeroable, Copy, Clone)]
@@ -10,17 +12,9 @@ struct EcResponseGetChipInfo {
     revision: [u8; 32],
 }
 
-pub fn ec_cmd_get_chip_info() -> EcCmdResult<(String, String, String)> {
-    let params = EcResponseGetChipInfo {
-        vendor: [0; 32],
-        name: [0; 32],
-        revision: [0; 32],
-    };
-
-    let params_slice = bytemuck::bytes_of(&params);
-
-    let result = ec_command(CrosEcCmd::GetChipInfo, 0, params_slice, EcInterface::Dev(String::from("/dev/cros_ec")))?;
-    let response = bytemuck::from_bytes::<EcResponseGetChipInfo>(&result);
+pub fn ec_cmd_get_chip_info(file: &mut File) -> EcCmdResult<(String, String, String)> {
+    let response: EcResponseGetChipInfo =
+        ec_command_bytemuck(CrosEcCmd::GetChipInfo, 0, &(), file.as_raw_fd())?;
 
     let vendor = String::from_utf8(response.vendor.to_vec()).unwrap_or_default();
     let name = String::from_utf8(response.name.to_vec()).unwrap_or_default();
