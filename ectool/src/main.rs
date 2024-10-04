@@ -3,6 +3,7 @@
 use std::fs::File;
 
 use charge_control_subcommand::{charge_control_subcommand, ChargeControlSubcommand};
+use charge_current_limit_subcommand::charge_current_limit_subcommand;
 use check_seed::check_seed;
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
@@ -36,6 +37,7 @@ use crosec::{
 };
 
 mod charge_control_subcommand;
+mod charge_current_limit_subcommand;
 mod check_seed;
 mod fp_download_subcommand;
 mod fp_get_encryption_status_command;
@@ -131,6 +133,11 @@ enum Commands {
     FpGetEncryptionStatus,
     GetUptimeInfo {
         device: Option<Device>,
+    },
+    ChargeCurrentLimit {
+        /// Limit in mA
+        #[arg()]
+        limit: u32,
     },
 }
 
@@ -286,6 +293,7 @@ fn main() -> Result<()> {
         Commands::FpUploadTemplate => fp_upload_template_command()?,
         Commands::FpGetEncryptionStatus => fp_get_encryption_status_command()?,
         Commands::GetUptimeInfo { device } => get_uptime_info_commnad(device)?,
+        Commands::ChargeCurrentLimit { limit } => charge_current_limit_subcommand(limit)?,
     }
 
     Ok(())

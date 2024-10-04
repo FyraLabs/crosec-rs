@@ -16,6 +16,7 @@ num-traits = "0.2.18"
 strum = "0.26.2"
 strum_macros = "0.26.4"
 thiserror = "1.0.57"
+uom = "0.36.0"
 
 [features]
 clap = ["dep:clap"]

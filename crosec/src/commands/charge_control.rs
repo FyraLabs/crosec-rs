@@ -3,7 +3,6 @@ use crate::commands::CrosEcCmd;
 use crate::ec_command::ec_command_bytemuck;
 use crate::EcCmdResult;
 use bytemuck::{Pod, Zeroable};
-use std::fs::File;
 use std::os::fd::AsRawFd;
 
 #[repr(C)]
@@ -20,7 +19,7 @@ pub enum ChargeControl {
     Discharge,
 }
 
-pub fn supports_get_and_sustainer(file: &mut File) -> EcCmdResult<bool> {
+pub fn supports_get_and_sustainer<File: AsRawFd>(file: &mut File) -> EcCmdResult<bool> {
     let versions = ec_cmd_get_cmd_versions(file, CrosEcCmd::ChargeControl)?;
     Ok(versions & V2 != 0)
 }
@@ -41,11 +40,14 @@ const CHARGE_CONTROL_COMMAND_NORMAL: u32 = 0;
 const CHARGE_CONTROL_COMMAND_IDLE: u32 = 1;
 const CHARGE_CONTROL_COMMAND_DISCHARGE: u32 = 2;
 
-pub fn get_charge_control(_file: &mut File) -> EcCmdResult<ChargeControl> {
+pub fn get_charge_control<File: AsRawFd>(_file: &mut File) -> EcCmdResult<ChargeControl> {
     panic!("Not implemented yet");
 }
 
-pub fn set_charge_control(file: &mut File, charge_control: ChargeControl) -> EcCmdResult<()> {
+pub fn set_charge_control<File: AsRawFd>(
+    file: &mut File,
+    charge_control: ChargeControl,
+) -> EcCmdResult<()> {
     ec_command_bytemuck(
         CrosEcCmd::ChargeControl,
         {

@@ -13,3 +13,4 @@ clap = { version = "4.5.4", features = ["derive"] }
 num-traits = "0.2.19"
 image = "0.25.1"
 strum = "0.26.3"
+uom = "0.36.0"

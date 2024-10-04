@@ -25,10 +25,12 @@ pub enum CrosEcCmd {
     FpSetSeed = 0x0408,
     FpGetEncryptionStatus = 0x0409,
     BatteryGetStatic = 0x0600,
+    ChargeCurrentLimit = 0x00A1,
 }
 
 pub mod board_version;
 pub mod charge_control;
+pub mod charge_current_limit;
 pub mod fp_download;
 pub mod fp_get_encryption_status;
 pub mod fp_info;
