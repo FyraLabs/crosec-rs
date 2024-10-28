@@ -2,10 +2,15 @@
 name = "ectool"
 version = "0.1.0"
 edition = "2021"
+description = "A Rust CLI for interfacing with the ChromeOS Embedded Controller."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crosec = { version = "0.1.0", path = "../crosec" }
+crosec = { version = "0.1.0", path = "../crosec", features = ["clap"] }
 color-eyre = "0.6.2"
-bytemuck = "1.16.0"
+clap = { version = "4.5.4", features = ["derive"] }
+num-traits = "0.2.19"
+image = "0.25.1"
+strum = "0.26.3"
+uom = "0.36.0"
