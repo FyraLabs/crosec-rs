@@ -2,9 +2,6 @@
 
 A Rust library and tools for interfacing with the [ChromeOS Embedded Controller](https://chromium.googlesource.com/chromiumos/platform/ec/+/HEAD/README.md).
 
-> [!WARNING]
-> This project is in the early stage. Contributions are welcome though!
-
 ## 🛠️ Dependencies
 
 Please make sure you have these dependencies first before building.
