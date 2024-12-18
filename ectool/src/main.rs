@@ -5,15 +5,18 @@ use std::fs::File;
 use charge_control_subcommand::{charge_control_subcommand, ChargeControlSubcommand};
 use charge_current_limit_subcommand::charge_current_limit_subcommand;
 use check_seed::check_seed;
+use check_user_id::check_user_id;
 use clap::{Parser, Subcommand, ValueEnum};
 use color_eyre::eyre::Result;
 use crosec::commands::fp_info::fp_info;
 use crosec::commands::fp_mode::{fp_mode, FpMode};
+use crosec::commands::fp_set_context::UserId;
 use crosec::commands::fp_set_seed::{fp_set_seed, FP_CONTEXT_TPM_BYTES};
 use crosec::commands::fp_stats::fp_stats;
 use crosec::commands::get_protocol_info::get_protocol_info;
 use crosec::wait_event::{event::EcMkbpEventType, wait_event_sync};
 use fp_download_subcommand::{fp_download_subcommand, FpDownloadSubcommand};
+use fp_set_context_command::fp_context_command;
 use fp_upload_template_command::fp_upload_template_command;
 use get_uptime_info_command::get_uptime_info_commnad;
 use num_traits::cast::FromPrimitive;
@@ -39,8 +42,10 @@ use crosec::{
 mod charge_control_subcommand;
 mod charge_current_limit_subcommand;
 mod check_seed;
+mod check_user_id;
 mod fp_download_subcommand;
 mod fp_get_encryption_status_command;
+mod fp_set_context_command;
 mod fp_upload_template_command;
 mod get_uptime_info_command;
 
@@ -138,6 +143,11 @@ enum Commands {
         /// Limit in mA
         #[arg()]
         limit: u32,
+    },
+    FpSetContext {
+        /// A 32 byte hex string
+        #[arg(value_parser = check_user_id)]
+        user_id: UserId,
     },
 }
 
@@ -294,6 +304,7 @@ fn main() -> Result<()> {
         Commands::FpGetEncryptionStatus => fp_get_encryption_status_command()?,
         Commands::GetUptimeInfo { device } => get_uptime_info_commnad(device)?,
         Commands::ChargeCurrentLimit { limit } => charge_current_limit_subcommand(limit)?,
+        Commands::FpSetContext { user_id } => fp_context_command(user_id)?,
     }
 
     Ok(())
