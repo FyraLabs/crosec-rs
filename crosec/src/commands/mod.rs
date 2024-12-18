@@ -17,6 +17,7 @@ pub enum CrosEcCmd {
     ConsoleSnapshot = 0x0097,
     ConsoleRead = 0x0098,
     GetUptimeInfo = 0x0121,
+    GetKeybdConfig = 0x012A,
     FpMode = 0x0402,
     FpInfo = 0x0403,
     FpFrame = 0x0404,
@@ -41,6 +42,7 @@ pub mod fp_upload_template;
 pub mod get_chip_info;
 pub mod get_cmd_versions;
 pub mod get_features;
+pub mod get_keyboard_config;
 pub mod get_protocol_info;
 pub mod get_uptime_info;
 pub mod hello;

@@ -24,6 +24,10 @@ use crosec::battery::battery;
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use crosec::commands::get_features::{ec_cmd_get_features, EC_FEATURE_PWM_FAN};
+use crosec::commands::get_keyboard_config::{
+    ec_cmd_get_keyboard_config, ActionKey, KEYBD_CAP_ASSISTANT_KEY, KEYBD_CAP_FUNCTION_KEYS,
+    KEYBD_CAP_NUMERIC_KEYPAD, KEYBD_CAP_SCRNLOCK_KEY,
+};
 use crosec::commands::set_fan_target_rpm::ec_cmd_set_fan_target_rpm;
 use crosec::commands::{
     get_chip_info::ec_cmd_get_chip_info, hello::ec_cmd_hello, version::ec_cmd_version, CrosEcCmd,
@@ -92,6 +96,8 @@ enum Commands {
     },
     /// Get supported features
     GetFeatures,
+    // Gets vivaldi keyboarc configuration
+    GetKeybdConfig,
     /// Get number of fans
     GetNumberOfFans,
     /// Get the speed of fans, in RPM
@@ -206,6 +212,54 @@ fn main() -> Result<()> {
             let mut file = File::open(CROS_EC_PATH)?;
             let features = ec_cmd_get_features(&mut file)?;
             println!("EC supported features: {features:#b}");
+        }
+        Commands::GetKeybdConfig => {
+            let mut file = File::open(CROS_EC_PATH)?;
+            let config = ec_cmd_get_keyboard_config(&mut file)?;
+            println!("Number of top row keys: {}", config.num_top_row_keys);
+            println!("Keys:");
+            for i in 0..config.num_top_row_keys as usize {
+                match FromPrimitive::from_u8(config.action_keys[i]) {
+                    Some(ActionKey::TkAbsent) => println!("Absent"),
+                    Some(ActionKey::TkBack) => println!("Back"),
+                    Some(ActionKey::TkForward) => println!("Forward"),
+                    Some(ActionKey::TkRefresh) => println!("Refresh"),
+                    Some(ActionKey::TkFullscreen) => println!("Fullscreen"),
+                    Some(ActionKey::TkOverview) => println!("Overview"),
+                    Some(ActionKey::TkBrightnessDown) => println!("Brightness Down"),
+                    Some(ActionKey::TkBrightnessUp) => println!("Brightness Up"),
+                    Some(ActionKey::TkVolMute) => println!("Volume Mute"),
+                    Some(ActionKey::TkVolDown) => println!("Volume Down"),
+                    Some(ActionKey::TkVolUp) => println!("Volume Up"),
+                    Some(ActionKey::TkSnapshot) => println!("Snapshot"),
+                    Some(ActionKey::TkPrivacyScrnToggle) => println!("Privacy Screen Toggle"),
+                    Some(ActionKey::TkKbdBklightDown) => println!("Keyboard Backlight Down"),
+                    Some(ActionKey::TkKbdBklightUp) => println!("Keyboard Backlight Up"),
+                    Some(ActionKey::TkPlayPause) => println!("Play/Pause"),
+                    Some(ActionKey::TkNextTrack) => println!("Next Track"),
+                    Some(ActionKey::TkPrevTrack) => println!("Previous Track"),
+                    Some(ActionKey::TkKbdBklightToggle) => println!("Keyboard Backlight Toggle"),
+                    Some(ActionKey::TkMicmute) => println!("Mic Mute"),
+                    Some(ActionKey::TkMenu) => println!("Menu"),
+                    Some(ActionKey::TkDictate) => println!("Dictate"),
+                    Some(ActionKey::TkAccessibility) => println!("Accessibility"),
+                    Some(ActionKey::TkDonotdisturb) => println!("No Not Disturb"),
+                    None => println!("Unknown"),
+                }
+            }
+            println!("Capabilities: {:#x}", config.capabilities);
+            if config.capabilities & KEYBD_CAP_FUNCTION_KEYS >= 1 {
+                println!("KEYBD_CAP_FUNCTION_KEYS");
+            }
+            if config.capabilities & KEYBD_CAP_NUMERIC_KEYPAD >= 1 {
+                println!("KEYBD_CAP_NUMERIC_KEYPAD");
+            }
+            if config.capabilities & KEYBD_CAP_SCRNLOCK_KEY >= 1 {
+                println!("KEYBD_CAP_SCRNLOCK_KEY");
+            }
+            if config.capabilities & KEYBD_CAP_ASSISTANT_KEY >= 1 {
+                println!("KEYBD_CAP_ASSISTANT_KEY");
+            }
         }
         Commands::GetNumberOfFans => {
             let mut file = File::open(CROS_EC_PATH)?;
