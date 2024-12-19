@@ -4,7 +4,7 @@ use clap::Subcommand;
 use color_eyre::eyre::Result;
 use crosec::{
     commands::charge_control::{
-        get_charge_control, set_charge_control, supports_get_and_sustainer, ChargeControl,
+        get_charge_control, set_charge_control, supports_get_and_sustainer, SetChargeControl,
         Sustainer,
     },
     CROS_EC_PATH,
@@ -46,7 +46,7 @@ pub fn charge_control_subcommand(command: Option<ChargeControlSubcommand>) -> Re
                         let max_percent = max_percent.unwrap_or(min_percent);
                         set_charge_control(
                             &mut file,
-                            ChargeControl::Normal(Some(Sustainer {
+                            SetChargeControl::Normal(Some(Sustainer {
                                 min_percent: min_percent as i8,
                                 max_percent: max_percent as i8,
                             })),
@@ -54,17 +54,17 @@ pub fn charge_control_subcommand(command: Option<ChargeControlSubcommand>) -> Re
                         println!("Set charge control to normal with sustainer from {min_percent}% to {max_percent}%");
                     }
                     None => {
-                        set_charge_control(&mut file, ChargeControl::Normal(None))?;
+                        set_charge_control(&mut file, SetChargeControl::Normal(None))?;
                         println!("Set charge control to normal");
                     }
                 },
                 ChargeControlSubcommand::Idle => {
                     println!("Set charge control to idle");
-                    set_charge_control(&mut file, ChargeControl::Idle)?;
+                    set_charge_control(&mut file, SetChargeControl::Idle)?;
                 }
                 ChargeControlSubcommand::Discharge => {
                     println!("Set charge control to discharge");
-                    set_charge_control(&mut file, ChargeControl::Discharge)?;
+                    set_charge_control(&mut file, SetChargeControl::Discharge)?;
                 }
             },
         }
