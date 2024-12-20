@@ -2,14 +2,14 @@ use std::os::fd::AsRawFd;
 
 use bytemuck::{Pod, Zeroable};
 use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, EnumString, IntoStaticStr};
+use strum_macros::{EnumIter, EnumString, FromRepr, IntoStaticStr};
 
 use crate::{ec_command::ec_command_bytemuck, EcCmdResult};
 
 use super::CrosEcCmd;
 
 /// Note that with the ChromiumOS ectool, to start enrolling, as well as continue the next step in enrolling, you do `ectool --name=cros_fp fpmode enroll`. The equivalent of this is to do `ectool fp-mode EnrollImage EnrollSession`.
-#[derive(EnumString, EnumIter, IntoStaticStr, Clone, Copy, Debug)]
+#[derive(EnumString, EnumIter, IntoStaticStr, Clone, Copy, Debug, FromRepr)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[repr(u32)]
 pub enum FpMode {
