@@ -33,10 +33,11 @@
                 components = [
                   "rustfmt"
                   "rust-src"
-                  "rust-analyzer"
                 ];
                 profile = "minimal";
               })
+              rust-analyzer
+              clippy
             ];
           };
       }
