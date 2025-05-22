@@ -31,7 +31,7 @@ enum FpContextAction {
 /// Related: https://chromium.googlesource.com/chromiumos/platform2/+/HEAD/biod/cros_fp_device.cc#660
 pub fn fp_set_context<File: AsRawFd>(file: &mut File, user_id: UserId) -> EcCmdResult<()> {
     // From testing, it seems that this can be anything besides all zeroes, but we're going to use these numbers in honor of CoolStar - https://github.com/coolstar/crosfingerprint/blob/5e77307d7542218e173f24eb657b426565ed361a/fingerprint_adapter/eccmd.cpp#L140
-    ec_command_bytemuck(
+    ec_command_bytemuck::<_, ()>(
         CrosEcCmd::FpContext,
         1,
         &EcParamsFpContextV1 {

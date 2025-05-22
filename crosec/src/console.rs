@@ -7,7 +7,7 @@ use crate::ec_command::{ec_command_bytemuck, ec_command_with_dynamic_output_size
 use crate::EcCmdResult;
 
 pub fn console(file: &mut File, protocol_info: &EcResponseGetProtocolInfo) -> EcCmdResult<String> {
-    ec_command_bytemuck(CrosEcCmd::ConsoleSnapshot, 0, &(), file.as_raw_fd())?;
+    ec_command_bytemuck::<_, ()>(CrosEcCmd::ConsoleSnapshot, 0, &(), file.as_raw_fd())?;
     let mut console = String::default();
     loop {
         let output = ec_command_with_dynamic_output_size(

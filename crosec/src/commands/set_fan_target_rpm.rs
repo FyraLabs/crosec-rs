@@ -42,7 +42,7 @@ pub fn ec_cmd_set_fan_target_rpm(
     // v1 can set the RPM for a specific fan
     match fan_index {
         Some(index) => {
-            ec_command_bytemuck(
+            ec_command_bytemuck::<_, ()>(
                 CrosEcCmd::SetFanTargetRpm,
                 1,
                 &EcParamsSetFanTargetRpmV1 {
@@ -54,7 +54,7 @@ pub fn ec_cmd_set_fan_target_rpm(
             )?;
         }
         None => {
-            ec_command_bytemuck(
+            ec_command_bytemuck::<_, ()>(
                 CrosEcCmd::SetFanTargetRpm,
                 0,
                 &EcParamsSetFanTargetRpmV0 { rpm },

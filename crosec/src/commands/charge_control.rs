@@ -137,7 +137,7 @@ pub fn set_charge_control<File: AsRawFd>(
     file: &mut File,
     charge_control: SetChargeControl,
 ) -> EcCmdResult<()> {
-    ec_command_bytemuck(
+    ec_command_bytemuck::<_, ()>(
         CrosEcCmd::ChargeControl,
         {
             Ok(if supports_get_and_sustainer(file)? {
