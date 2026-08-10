@@ -17,6 +17,7 @@ pub enum CrosEcCmd {
     ConsoleSnapshot = 0x0097,
     ConsoleRead = 0x0098,
     GetUptimeInfo = 0x0121,
+    ADCRead = 0x0123,
     GetKeybdConfig = 0x012A,
     FpMode = 0x0402,
     FpInfo = 0x0403,
@@ -30,6 +31,7 @@ pub enum CrosEcCmd {
     ChargeCurrentLimit = 0x00A1,
 }
 
+pub mod adc_read;
 pub mod board_version;
 pub mod charge_control;
 pub mod charge_current_limit;

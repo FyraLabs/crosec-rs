@@ -24,6 +24,7 @@ use strum::IntoEnumIterator;
 
 use crate::fp_get_encryption_status_command::fp_get_encryption_status_command;
 use crosec::battery::battery;
+use crosec::commands::adc_read::ec_cmd_adc_read;
 use crosec::commands::board_version::ec_cmd_board_version;
 use crosec::commands::get_cmd_versions::ec_cmd_get_cmd_versions;
 use crosec::commands::get_features::{ec_cmd_get_features, EC_FEATURE_PWM_FAN};
@@ -154,6 +155,11 @@ enum Commands {
         /// A 32 byte hex string
         #[arg(value_parser = check_user_id)]
         user_id: UserId,
+    },
+    /// Read an ADC channel
+    ADCRead {
+        /// Channel to read
+        channel: u8,
     },
 }
 
@@ -359,6 +365,11 @@ fn main() -> Result<()> {
         Commands::GetUptimeInfo { device } => get_uptime_info_commnad(device)?,
         Commands::ChargeCurrentLimit { limit } => charge_current_limit_subcommand(limit)?,
         Commands::FpSetContext { user_id } => fp_context_command(user_id)?,
+        Commands::ADCRead { channel } => {
+            let mut file = File::open(CROS_EC_PATH)?;
+            let channel_value = ec_cmd_adc_read(&mut file, channel)?;
+            println!("{channel}: {channel_value}");
+        }
     }
 
     Ok(())
